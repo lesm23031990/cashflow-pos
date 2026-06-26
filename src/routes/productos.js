@@ -1,0 +1,102 @@
+const { Router } = require('express');
+const { consultar, primero, ejecutar } = require('../database/connection');
+
+const router = Router();
+
+router.get('/', (req, res) => {
+  const rows = consultar(
+    'SELECT id, nombre, precio_cop, marca, categoria FROM productos ORDER BY nombre'
+  );
+  res.json(rows.map(r => ({
+    id: r.id,
+    p: r.nombre,
+    v: r.precio_cop,
+    m: r.marca || '',
+    c: r.categoria || ''
+  })));
+});
+
+router.post('/', (req, res) => {
+  const { nombre, precio_cop, marca, categoria } = req.body;
+  if (!nombre || precio_cop == null) {
+    return res.status(400).json({ error: 'Faltan campos: nombre, precio_cop' });
+  }
+  ejecutar(
+    'INSERT INTO productos (nombre, precio_cop, marca, categoria) VALUES (?, ?, ?, ?)',
+    [nombre, precio_cop, marca || '', categoria || '']
+  );
+  const row = primero('SELECT MAX(id) AS id FROM productos');
+  res.status(201).json({
+    id: row.id, p: nombre, v: precio_cop, m: marca || '', c: categoria || ''
+  });
+});
+
+router.put('/:id', (req, res) => {
+  const { id } = req.params;
+  const existe = primero('SELECT id FROM productos WHERE id = ?', [id]);
+  if (!existe) {
+    return res.status(404).json({ error: 'Producto no encontrado' });
+  }
+
+  const campos = [];
+  const valores = [];
+  const { nombre, precio_cop, marca, categoria } = req.body;
+
+  if (nombre !== undefined) { campos.push('nombre = ?'); valores.push(nombre); }
+  if (precio_cop !== undefined) { campos.push('precio_cop = ?'); valores.push(precio_cop); }
+  if (marca !== undefined) { campos.push('marca = ?'); valores.push(marca); }
+  if (categoria !== undefined) { campos.push('categoria = ?'); valores.push(categoria); }
+
+  if (campos.length === 0) {
+    return res.status(400).json({ error: 'No hay campos para actualizar' });
+  }
+
+  valores.push(id);
+  ejecutar(`UPDATE productos SET ${campos.join(', ')} WHERE id = ?`, valores);
+
+  const updated = primero(
+    'SELECT id, nombre, precio_cop, marca, categoria FROM productos WHERE id = ?', [id]
+  );
+  res.json({
+    id: updated.id, p: updated.nombre, v: updated.precio_cop,
+    m: updated.marca || '', c: updated.categoria || ''
+  });
+});
+
+router.delete('/:id', (req, res) => {
+  const { id } = req.params;
+  ejecutar('DELETE FROM productos WHERE id = ?', [id]);
+  res.json({ ok: true });
+});
+
+router.get('/exportar', (req, res) => {
+  const rows = consultar(
+    'SELECT id, nombre, precio_cop, marca, categoria FROM productos ORDER BY nombre'
+  );
+  res.json(rows.map(r => ({
+    id: r.id, p: r.nombre, v: r.precio_cop,
+    m: r.marca || '', c: r.categoria || ''
+  })));
+});
+
+router.post('/importar', (req, res) => {
+  const data = req.body;
+  if (!Array.isArray(data)) {
+    return res.status(400).json({ error: 'Se espera un array' });
+  }
+  ejecutar('DELETE FROM productos');
+  for (const item of data) {
+    ejecutar(
+      'INSERT INTO productos (nombre, precio_cop, marca, categoria) VALUES (?, ?, ?, ?)',
+      [
+        item.p || item.nombre || '',
+        item.v || item.precio_cop || 0,
+        item.m || item.marca || '',
+        item.c || item.categoria || ''
+      ]
+    );
+  }
+  res.json({ ok: true, cantidad: data.length });
+});
+
+module.exports = router;

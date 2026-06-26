@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Precios Express</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; min-height: 100vh; padding: 1rem; }
+        .wrapper { max-width: 36rem; margin: 0 auto; display: flex; flex-direction: column; height: 90vh; }
+        header { margin-bottom: 1rem; }
+        h1 { text-align: center; color: #06b6d4; font-size: 1.25rem; margin-bottom: 0.5rem; }
+        #searchBar {
+            width: 100%; background: #1e293b; color: #fff; border: 2px solid #334155;
+            border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 1.125rem;
+            outline: none;
+        }
+        #searchBar:focus { border-color: #06b6d4; }
+        main { flex: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { position: sticky; top: 0; }
+        th {
+            background: #0f172a; color: #94a3b8; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155;
+        }
+        th:last-child { text-align: right; }
+        td {
+            padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e293b;
+            vertical-align: middle;
+        }
+        td:last-child {
+            text-align: right; font-weight: 700; color: #34d399;
+            font-family: monospace; font-size: 1.125rem;
+        }
+        tr:hover td { background: #1e293b; }
+        .marca { font-size: 0.75rem; color: #64748b; }
+        .vacio { padding: 1rem; text-align: center; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <header>
+            <h1>Precios Caja Registradora</h1>
+            <input type="text" id="searchBar" placeholder="Escribe para buscar... (ESC para limpiar)" autofocus>
+        </header>
+        <main>
+            <table>
+                <thead>
+                    <tr><th>Producto</th><th>Marca</th><th>Precio</th></tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </main>
+    </div>
+    <script>
+        var listaPrecios = [
+            { p: "Lata Grande", v: 3500, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Bandeja de 24 unidades (lata grande)", v: 77000, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Lata Peque\u00f1a", v: 2800, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "La bandeja lata peque\u00f1a", v: 64000, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Soda Pl\u00e1stica", v: 4000, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Soda Lata", v: 4800, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Agua Saborizada", v: 4500, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Malta Chiquita (Retornable)", v: 2500, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Cerveza negra, blanca, azul", v: 2500, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Cerveza Verde", v: 3000, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Caja de Negra, light", v: 70000, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Caja de Solera Azul", v: 70000, m: "Solera", c: "Cervezas y Bebidas" },
+            { p: "Caja de Solera Verde", v: 78000, m: "Solera", c: "Cervezas y Bebidas" },
+            { p: "Tobo de Cerveza (Negra, Azul, Light)", v: 20000, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Malta 1 1/2 Litro", v: 6500, m: "Gen\u00e9rico", c: "Cervezas y Bebidas" },
+            { p: "Yogurth Peque\u00f1o", v: 5500, m: "Gen\u00e9rico", c: "L\u00e1cteos y Bebidas" },
+            { p: "Yogurth Grande", v: 14000, m: "Gen\u00e9rico", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche Almendras", v: 14000, m: "Gen\u00e9rico", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche (todas)", v: 9500, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche (todas)", v: 9600, m: "Pur\u00edsima", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche (todas)", v: 10000, m: "Carabobo", c: "L\u00e1cteos y Bebidas" },
+            { p: "Jugos Sabores 250 mL", v: 3500, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "Jugos Sabores 350 mL", v: 4300, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "Jugos Naranja 350 mL", v: 4700, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "Jugos 1 litro", v: 7800, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "Jugo Naranja 1 Litro", v: 10000, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "T\u00e9 1 Litro", v: 7500, m: "Tunal", c: "L\u00e1cteos y Bebidas" },
+            { p: "T\u00e9 500 mL", v: 4500, m: "Tunal", c: "L\u00e1cteos y Bebidas" },
+            { p: "Chicha", v: 13500, m: "Natulac", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche", v: 10000, m: "San Sim\u00f3n", c: "L\u00e1cteos y Bebidas" },
+            { p: "Chicha", v: 13000, m: "Parmalat", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche", v: 9600, m: "Parmalat", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche", v: 9800, m: "Campestre", c: "L\u00e1cteos y Bebidas" },
+            { p: "Chichero", v: 12600, m: "Gen\u00e9rico", c: "L\u00e1cteos y Bebidas" },
+            { p: "Jugo", v: 7200, m: "Frica", c: "L\u00e1cteos y Bebidas" },
+            { p: "Chicha Chichero", v: 13000, m: "Chichero", c: "L\u00e1cteos y Bebidas" },
+            { p: "T\u00e9 con Az\u00facar", v: 6000, m: "Parmalat", c: "L\u00e1cteos y Bebidas" },
+            { p: "T\u00e9 sin Az\u00facar", v: 5000, m: "Parmalat", c: "L\u00e1cteos y Bebidas" },
+            { p: "Yogurth Vaso Peque\u00f1o", v: 5500, m: "Gen\u00e9rico", c: "L\u00e1cteos y Bebidas" },
+            { p: "T\u00e9 1 1/2 Litro", v: 15500, m: "Lipton", c: "L\u00e1cteos y Bebidas" },
+            { p: "T\u00e9 personal", v: 5500, m: "Lipton", c: "L\u00e1cteos y Bebidas" },
+            { p: "Latti Normal (Leche)", v: 5000, m: "Latti", c: "L\u00e1cteos y Bebidas" },
+            { p: "Latti Deslactosada (Leche)", v: 5500, m: "Latti", c: "L\u00e1cteos y Bebidas" },
+            { p: "Leche de la Cuesta", v: 5000, m: "De la Cuesta", c: "L\u00e1cteos y Bebidas" },
+            { p: "Milka", v: 11000, m: "Milka", c: "Chocolates y Dulces" },
+            { p: "CriCri 60gr", v: 9500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Savoy 60gr", v: 9500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Riquiti 30gr", v: 4800, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Galak 30gr", v: 4800, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Savoy 30gr", v: 4800, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Delight 30gr", v: 5600, m: "Delight", c: "Chocolates y Dulces" },
+            { p: "CriCri 30gr", v: 4800, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Samba 32gr", v: 3500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Samba 16gr", v: 2000, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Riquiti 130gr", v: 15500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Carre 100gr", v: 5000, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "ChocoTrio", v: 9500, m: "Nestl\u00e9", c: "Chocolates y Dulces" },
+            { p: "Carre Grande", v: 17000, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Kit Kat", v: 6000, m: "Kit Kat", c: "Chocolates y Dulces" },
+            { p: "Chocolate MM", v: 8500, m: "M&M", c: "Chocolates y Dulces" },
+            { p: "Ovomaltina", v: 5000, m: "Ovomaltina", c: "Chocolates y Dulces" },
+            { p: "Palitos", v: 2000, m: "Gen\u00e9rico", c: "Chocolates y Dulces" },
+            { p: "Pirulin Peque\u00f1o", v: 2000, m: "Nucita", c: "Chocolates y Dulces" },
+            { p: "Cocosete Ven", v: 3500, m: "Nestl\u00e9", c: "Chocolates y Dulces" },
+            { p: "Cocosete Col", v: 2500, m: "Nestl\u00e9", c: "Chocolates y Dulces" },
+            { p: "Toronto", v: 2000, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Max Pirulin", v: 4000, m: "Nucita", c: "Chocolates y Dulces" },
+            { p: "Nucita", v: 2000, m: "Nucita", c: "Chocolates y Dulces" },
+            { p: "Galak tubito", v: 1500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Loki\u00f1o mini", v: 1500, m: "Loki\u00f1o", c: "Chocolates y Dulces" },
+            { p: "Trident Grande", v: 5800, m: "Trident", c: "Chocolates y Dulces" },
+            { p: "Trident Peque\u00f1o", v: 2500, m: "Trident", c: "Chocolates y Dulces" },
+            { p: "Halls", v: 2500, m: "Halls", c: "Chocolates y Dulces" },
+            { p: "Huevos Sorpresa", v: 2500, m: "Gen\u00e9rico", c: "Chocolates y Dulces" },
+            { p: "Masmelos", v: 6500, m: "Gen\u00e9rico", c: "Chocolates y Dulces" },
+            { p: "Gomitas trululu", v: 2500, m: "Trululu", c: "Chocolates y Dulces" },
+            { p: "Pirulin Dispensador", v: 8500, m: "Nucita", c: "Chocolates y Dulces" },
+            { p: "Chao en l\u00ednea", v: 1000, m: "Chao", c: "Chocolates y Dulces" },
+            { p: "Chao Pastillas", v: 1500, m: "Chao", c: "Chocolates y Dulces" },
+            { p: "Savoy 130gr", v: 14500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "TronKolate", v: 3500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Savoy Postres", v: 21500, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Dandy", v: 1800, m: "Savoy", c: "Chocolates y Dulces" },
+            { p: "Carore\u00f1a 1,75 L", v: 25000, m: "Carore\u00f1a", c: "Sangr\u00eda y Licores" },
+            { p: "Carore\u00f1a Lata", v: 5000, m: "Carore\u00f1a", c: "Sangr\u00eda y Licores" },
+            { p: "Mojito", v: 5500, m: "Gen\u00e9rico", c: "Sangr\u00eda y Licores" },
+            { p: "Que Manda", v: 19000, m: "Que Manda", c: "Sangr\u00eda y Licores" },
+            { p: "Que Manda Lata", v: 3800, m: "Que Manda", c: "Sangr\u00eda y Licores" },
+            { p: "Carive\u00f1a", v: 20000, m: "Carive\u00f1a", c: "Sangr\u00eda y Licores" },
+            { p: "Malaque\u00f1a", v: 16500, m: "Malaque\u00f1a", c: "Sangr\u00eda y Licores" },
+            { p: "Coca Cola 2 Litros", v: 6000, m: "Coca Cola", c: "Refrescos y Aguas" },
+            { p: "Coca Cola 1 Litro", v: 4500, m: "Coca Cola", c: "Refrescos y Aguas" },
+            { p: "Coca Cola 1,5 Litro", v: 5500, m: "Coca Cola", c: "Refrescos y Aguas" },
+            { p: "Coca Cola PlastiChick", v: 3500, m: "Coca Cola", c: "Refrescos y Aguas" },
+            { p: "Agua Nevada 600 mL", v: 3500, m: "Nevada", c: "Refrescos y Aguas" },
+            { p: "Agua Nevada 355 mL", v: 2500, m: "Nevada", c: "Refrescos y Aguas" },
+            { p: "Agua Nevada 1,5 Litro", v: 6000, m: "Nevada", c: "Refrescos y Aguas" },
+            { p: "Agua Palmera 5 Litro", v: 9500, m: "Palmera", c: "Refrescos y Aguas" },
+            { p: "Agua Palmera 1,5 Litro", v: 5500, m: "Palmera", c: "Refrescos y Aguas" },
+            { p: "Agua Palmera peque\u00f1a", v: 2500, m: "Palmera", c: "Refrescos y Aguas" },
+            { p: "Gatore Manzana", v: 6700, m: "Gatorade", c: "Refrescos y Aguas" },
+            { p: "Nestea (C/A -> 6500, S/A -> 4000)", v: 4000, m: "Nestea", c: "Refrescos y Aguas" },
+            { p: "Coca Cola Lata", v: 4000, m: "Coca Cola", c: "Refrescos y Aguas" },
+            { p: "Coca Cola PlastiChip", v: 3500, m: "Coca Cola", c: "Refrescos y Aguas" },
+            { p: "Alfajores", v: 4500, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Pistacho", v: 3200, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Almendra", v: 3200, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "1 Carton Huevos", v: 19000, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "1/2 Carton Huevos", v: 9500, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Sal Cristal Marina", v: 2000, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Taki", v: 4500, m: "Takis", c: "Snacks y Varios" },
+            { p: "De Todito Grande", v: 9500, m: "Frito-Lay", c: "Snacks y Varios" },
+            { p: "Botecitos Rellenos", v: 3000, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Galletas Newton", v: 3000, m: "Newtons", c: "Snacks y Varios" },
+            { p: "Cronch Flakes", v: 11300, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Yesquero", v: 1000, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Pepito", v: 6000, m: "Pepito", c: "Snacks y Varios" },
+            { p: "Galleta Mar\u00eda", v: 5500, m: "Gen\u00e9rico", c: "Snacks y Varios" },
+            { p: "Dorito Grande", v: 12500, m: "Doritos", c: "Snacks y Varios" }
+        ];
+
+        function buscar(raw, items) {
+            var q = raw.toLowerCase().trim();
+            if (!q) return items;
+            var pts = [];
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                var txt = (item.p + ' ' + (item.m || '') + ' ' + (item.c || '')).toLowerCase();
+                var score = 0;
+                if (txt === q) score = 100;
+                else if (txt.indexOf(q) === 0) score = 80;
+                else if (txt.indexOf(' ' + q) !== -1) score = 65;
+                else if (txt.indexOf(q) !== -1) score = 40;
+                if (score > 0) pts.push({ item: item, score: score });
+            }
+            pts.sort(function (a, b) { return b.score - a.score; });
+            var result = [];
+            for (var j = 0; j < pts.length; j++) result.push(pts[j].item);
+            return result;
+        }
+
+        var searchBar = document.getElementById('searchBar');
+        var resultsBody = document.getElementById('resultsBody');
+
+        function renderResults(lista) {
+            if (!lista || lista.length === 0) {
+                resultsBody.innerHTML = '<tr><td colspan="3" class="vacio">No encontrado</td></tr>';
+                return;
+            }
+            resultsBody.innerHTML = '';
+            for (var i = 0; i < lista.length; i++) {
+                var item = lista[i];
+                var tr = document.createElement('tr');
+                var marca = item.m || '';
+                tr.innerHTML = '<td>' + item.p + '</td>'
+                    + '<td><span class="marca">' + marca + '</span></td>'
+                    + '<td>$' + Number(item.v).toLocaleString('es-CO') + '</td>';
+                resultsBody.appendChild(tr);
+            }
+        }
+
+        renderResults(listaPrecios);
+
+        searchBar.addEventListener('input', function (e) {
+            var v = e.target.value.trim();
+            renderResults(v === '' ? listaPrecios : buscar(v, listaPrecios));
+        });
+
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+                e.preventDefault();
+                searchBar.value = '';
+                renderResults(listaPrecios);
+                searchBar.focus();
+            }
+        });
+    </script>
+</body>
+</html>
