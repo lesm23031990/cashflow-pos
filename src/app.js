@@ -16,6 +16,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(express.static(path.join(__dirname, '..'))); // para busqueda.html desde raíz
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
 app.use('/facturacion', express.static(path.join(__dirname, '..', 'public', 'facturacion')));
+app.use('/dashboard', express.static(path.join(__dirname, '..', 'public', 'dashboard')));
 
 // API routes
 app.use('/api/productos', productosRouter);
@@ -23,9 +24,15 @@ app.use('/api/tasas', tasasRouter);
 app.use('/api/clientes', clientesRouter);
 app.use('/api/facturas', facturasRouter);
 
-// Redirigir /admin a /admin/index.html
+// Redirigir rutas al index.html de cada secci&oacute;n
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin', 'index.html'));
+});
+app.get('/facturacion', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'facturacion', 'index.html'));
+});
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard', 'index.html'));
 });
 
 // Inicializar base de datos

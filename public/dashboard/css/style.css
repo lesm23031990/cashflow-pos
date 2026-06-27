@@ -1,0 +1,48 @@
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#0b1120;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5}
+
+.app{display:flex;flex-direction:column;height:100vh;max-width:64rem;margin:0 auto;padding:0 .75rem}
+.workspace{flex:1;overflow-y:auto;padding-bottom:2rem;scrollbar-width:thin;scrollbar-color:#1e293b transparent}
+.workspace::-webkit-scrollbar{width:6px}
+.workspace::-webkit-scrollbar-thumb{background:#1e293b;border-radius:3px}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid #1e293b;flex-shrink:0}
+.topbar-title{color:#06b6d4;font-size:1.25rem;font-weight:700}
+.topbar-nav{display:flex;gap:.25rem}
+.topbar-nav a{color:#64748b;text-decoration:none;font-size:.8125rem;padding:.3rem .65rem;border-radius:.375rem;transition:.15s}
+.topbar-nav a:hover{color:#e2e8f0;background:#1e293b}
+
+/* ── KPI Grid ─────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.5rem;margin:.75rem 0}
+.kpi{background:#131c2e;border:1px solid #1e293b;border-radius:.625rem;padding:.85rem .75rem;text-align:center;transition:.15s}
+.kpi:hover{border-color:#06b6d440;background:#1a2740}
+.kpi-value{display:block;font-size:1.5rem;font-weight:700;color:#34d399;font-family:monospace;margin-bottom:.2rem}
+.kpi-label{font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+
+/* ── Card ─────────────────────────────────────────── */
+.card{background:#131c2e;border:1px solid #1e293b;border-radius:.625rem;margin-bottom:.75rem}
+.card-head{padding:.625rem .875rem 0}
+.card-head h2{font-size:.9375rem;font-weight:600;color:#e2e8f0}
+.card-body{padding:.625rem .875rem .875rem}
+
+/* ── Tasas ────────────────────────────────────────── */
+.tasa-row{display:flex;gap:1.5rem;flex-wrap:wrap}
+.tasa-item{display:inline-flex;align-items:center;gap:.5rem;font-size:.875rem;color:#94a3b8}
+.tasa-mono{background:#0b1120;color:#06b6d4;font-weight:700;font-size:.75rem;padding:.15rem .45rem;border-radius:.25rem;border:1px solid #06b6d420}
+
+/* ── Table ────────────────────────────────────────── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8125rem}
+th{color:#64748b;font-size:.6875rem;text-transform:uppercase;letter-spacing:.04em;padding:.45rem .5rem;text-align:left;border-bottom:1px solid #1e293b;white-space:nowrap}
+td{padding:.35rem .5rem;border-bottom:1px solid #0f172a;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#ffffff04}
+.col-price{text-align:right;font-family:monospace}
+th.col-price{text-align:right}
+
+/* ── Responsive ───────────────────────────────────── */
+@media(max-width:480px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .topbar{flex-direction:column;gap:.35rem;padding:.5rem 0}
+}

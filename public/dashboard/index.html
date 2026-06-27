@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="topbar-title">Panel de Control</h1>
+    <nav class="topbar-nav">
+      <a href="/facturacion">Facturaci&oacute;n</a>
+      <a href="/admin">Admin</a>
+      <a href="/busqueda.html">Buscar</a>
+    </nav>
+  </header>
+
+  <div class="workspace">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <span class="kpi-value" id="kpiFacturasHoy">0</span>
+        <span class="kpi-label">Facturas Hoy</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value" id="kpiIngresosHoy">$0</span>
+        <span class="kpi-label">Ingresos Hoy</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value" id="kpiTotalIngresos">$0</span>
+        <span class="kpi-label">Ingresos Totales</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value" id="kpiProductos">0</span>
+        <span class="kpi-label">Productos</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value" id="kpiClientes">0</span>
+        <span class="kpi-label">Clientes</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value" id="kpiFacturasTotal">0</span>
+        <span class="kpi-label">Facturas Totales</span>
+      </div>
+    </div>
+
+    <!-- Tasas -->
+    <section class="card">
+      <div class="card-head"><h2>Tasas de Cambio</h2></div>
+      <div class="card-body">
+        <div class="tasa-row">
+          <span class="tasa-item"><span class="tasa-mono">USD</span> <span id="tasaUsdDisplay">1 USD = 3.500 COP</span></span>
+          <span class="tasa-item"><span class="tasa-mono">VES</span> <span id="tasaVesDisplay">1 VES = 4,7 COP</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Facturas recientes -->
+    <section class="card">
+      <div class="card-head"><h2>&Uacute;ltimas Facturas</h2></div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th class="col-price">Total</th>
+                <th>Moneda</th>
+              </tr>
+            </thead>
+            <tbody id="facturasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
