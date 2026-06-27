@@ -69,7 +69,7 @@ router.post('/', (req, res) => {
 
   ejecutar(
     'INSERT INTO facturas (cliente_id, fecha, moneda, tasa_usd, tasa_ves, subtotal, descuento, total, status, metodo_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [cliente_id, fecha, m, tasas.usd, tasas.ves, subtotal, desc, total, 'en espera', mp]
+    [cid, fecha, m, tasas.usd, tasas.ves, subtotal, desc, total, 'en espera', mp]
   );
 
   const factura = primero('SELECT MAX(id) AS id FROM facturas');

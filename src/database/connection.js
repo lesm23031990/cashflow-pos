@@ -20,10 +20,6 @@ async function conectar() {
 
   db.run('PRAGMA foreign_keys = ON');
 
-  // Migraciones
-  try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
-  try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
-
   db.run(`
     CREATE TABLE IF NOT EXISTS metodos_pago (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +66,8 @@ async function conectar() {
       subtotal REAL NOT NULL DEFAULT 0,
       descuento REAL NOT NULL DEFAULT 0,
       total REAL NOT NULL DEFAULT 0,
+      status TEXT DEFAULT 'en espera',
+      metodo_pago TEXT DEFAULT '',
       FOREIGN KEY (cliente_id) REFERENCES clientes(id)
     )
   `);
@@ -87,6 +85,17 @@ async function conectar() {
       FOREIGN KEY (producto_id) REFERENCES productos(id)
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS metodos_pago (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE
+    )
+  `);
+
+  // Migraciones post-creaci&oacute;n (para bases existentes)
+  try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
+  try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
 
   return db;
 }
