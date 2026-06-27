@@ -94,7 +94,7 @@
       var item = lista[i];
       var idx = productos.indexOf(item);
       var cop = item.v;
-      var usdVal = usd > 0 ? cop * usd : 0;
+      var usdVal = usd > 0 ? cop / usd : 0;
       var vesVal = ves > 0 ? cop * ves : 0;
 
       var tr = document.createElement('tr');
@@ -103,7 +103,7 @@
         '<td>' + esc(item.m || '') + '</td>' +
         '<td>' + esc(item.c || '') + '</td>' +
         '<td class="precio-cop">$' + Number(cop).toLocaleString('es-CO') + '</td>' +
-        '<td class="precio-usd">$' + usdVal.toFixed(4) + '</td>' +
+        '<td class="precio-usd">$' + Number(usdVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
         '<td class="precio-ves">Bs ' + Number(vesVal).toLocaleString('es-CO', { maximumFractionDigits: 2 }) + '</td>' +
         '<td class="acciones">' +
         '<button class="btn-edit" data-idx="' + idx + '" title="Editar">\u270F\uFE0F</button>' +

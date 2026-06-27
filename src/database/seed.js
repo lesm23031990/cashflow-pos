@@ -136,7 +136,7 @@ async function sembrar() {
 
   const tasaExiste = consultar('SELECT COUNT(*) AS count FROM tasas WHERE id = 1');
   if (tasaExiste[0].count === 0) {
-    ejecutar('INSERT INTO tasas (id, usd, ves) VALUES (1, 0.00024, 4.50)');
+    ejecutar('INSERT INTO tasas (id, usd, ves) VALUES (1, 3500, 4.70)');
   }
 }
 
