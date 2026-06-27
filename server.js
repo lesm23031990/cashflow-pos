@@ -7,6 +7,7 @@ inicializar().then(() => {
     console.log(`\n  Servidor corriendo en http://localhost:${PORT}`);
     console.log(`  Admin:  http://localhost:${PORT}/admin`);
     console.log(`  Buscar: http://localhost:${PORT}/busqueda.html`);
+    console.log(`  Facturar: http://localhost:${PORT}/facturacion`);
     console.log('  Presiona Ctrl+C para detener.\n');
   });
 }).catch(err => {

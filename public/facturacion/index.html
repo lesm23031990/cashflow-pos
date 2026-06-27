@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facturaci&oacute;n</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <h1>Facturaci&oacute;n</h1>
+    <nav>
+      <a href="/admin">Admin</a>
+      <a href="/busqueda.html">Buscar</a>
+    </nav>
+  </header>
+
+  <!-- Paso 1: Seleccionar cliente -->
+  <section id="pasoCliente" class="card">
+    <h2>Cliente</h2>
+    <div class="cliente-row">
+      <select id="selCliente"></select>
+      <button class="btn btn-primary" onclick="abrirClienteModal()">+ Nuevo</button>
+    </div>
+  </section>
+
+  <!-- Paso 2: Agregar productos -->
+  <section id="pasoProductos" class="card">
+    <h2>Productos</h2>
+    <div class="agregar-row">
+      <input type="text" id="buscarProd" placeholder="Buscar producto...">
+      <input type="number" id="cantProd" value="1" min="1" step="1">
+      <button class="btn btn-primary" onclick="agregarProducto()">Agregar</button>
+    </div>
+    <div id="resultadosBusqueda" class="sugerencias"></div>
+    <table>
+      <thead><tr><th>Producto</th><th class="num">Cant</th><th class="num">Precio</th><th class="num">Subtotal</th><th></th></tr></thead>
+      <tbody id="detalleBody"></tbody>
+    </table>
+  </section>
+
+  <!-- Paso 3: Resumen y generar -->
+  <section class="card resumen">
+    <div class="resumen-row">
+      <div class="campo">
+        <label>Moneda</label>
+        <select id="selMoneda">
+          <option value="COP">COP $</option>
+          <option value="USD">USD $</option>
+          <option value="VES">VES Bs</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Descuento</label>
+        <input type="number" id="inputDescuento" value="0" min="0" step="100">
+      </div>
+      <div class="total-box">
+        <span class="total-label">TOTAL</span>
+        <span class="total-valor" id="totalValor">$0</span>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="generarFactura()">Generar Factura</button>
+  </section>
+
+  <!-- Facturas recientes -->
+  <section class="card">
+    <h2>Facturas recientes</h2>
+    <table>
+      <thead><tr><th>#</th><th>Cliente</th><th>Fecha</th><th class="num">Total</th><th>Moneda</th><th></th></tr></thead>
+      <tbody id="facturasBody"></tbody>
+    </table>
+  </section>
+</div>
+
+<!-- Modal cliente -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal">
+    <h2>Nuevo cliente</h2>
+    <div class="campo"><label>Nombre</label><input type="text" id="frmClienteNombre"></div>
+    <div class="campo"><label>Documento</label><input type="text" id="frmClienteDoc"></div>
+    <div class="campo"><label>Tel&eacute;fono</label><input type="text" id="frmClienteTel"></div>
+    <div class="campo"><label>Direcci&oacute;n</label><input type="text" id="frmClienteDir"></div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" onclick="cerrarModal('modalCliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Factura vista -->
+<div class="modal-overlay" id="modalFactura">
+  <div class="modal modal-lg">
+    <h2>Factura #<span id="facturaNum"></span></h2>
+    <div id="facturaContenido"></div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" onclick="cerrarModal('modalFactura')">Cerrar</button>
+      <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

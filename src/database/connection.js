@@ -38,6 +38,45 @@ async function conectar() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL,
+      documento TEXT DEFAULT '',
+      telefono TEXT DEFAULT '',
+      direccion TEXT DEFAULT ''
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS facturas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente_id INTEGER NOT NULL,
+      fecha TEXT NOT NULL,
+      moneda TEXT NOT NULL DEFAULT 'COP',
+      tasa_usd REAL NOT NULL DEFAULT 0.00024,
+      tasa_ves REAL NOT NULL DEFAULT 4.50,
+      subtotal REAL NOT NULL DEFAULT 0,
+      descuento REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS factura_detalles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      factura_id INTEGER NOT NULL,
+      producto_id INTEGER NOT NULL,
+      producto_nombre TEXT NOT NULL,
+      cantidad REAL NOT NULL DEFAULT 1,
+      precio_unitario REAL NOT NULL,
+      subtotal REAL NOT NULL,
+      FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
+      FOREIGN KEY (producto_id) REFERENCES productos(id)
+    )
+  `);
+
   return db;
 }
 

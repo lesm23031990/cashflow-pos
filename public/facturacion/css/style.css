@@ -1,0 +1,70 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f172a;color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;padding:1rem}
+.wrapper{max-width:56rem;margin:0 auto}
+
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+header h1{color:#06b6d4;font-size:1.5rem}
+header nav a{color:#94a3b8;text-decoration:none;font-size:.875rem;margin-left:1rem}
+header nav a:hover{color:#06b6d4}
+
+.card{background:#1e293b;border-radius:.5rem;padding:1rem;margin-bottom:1rem}
+
+h2{color:#e2e8f0;font-size:1rem;margin-bottom:.75rem}
+
+.cliente-row{display:flex;gap:.5rem;align-items:center}
+.cliente-row select{flex:1;background:#0f172a;color:#fff;border:1px solid #334155;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem}
+.cliente-row select:focus{border-color:#06b6d4;outline:none}
+
+.agregar-row{display:flex;gap:.5rem;margin-bottom:.5rem}
+.agregar-row input{background:#0f172a;color:#fff;border:1px solid #334155;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem}
+.agregar-row input:focus{border-color:#06b6d4;outline:none}
+#buscarProd{flex:1}
+#cantProd{width:4rem;text-align:center}
+
+.sugerencias{background:#0f172a;border:1px solid #334155;border-radius:.375rem;max-height:10rem;overflow-y:auto;margin-bottom:.5rem;display:none}
+.sugerencias.visible{display:block}
+.sugerencia-item{padding:.5rem .75rem;cursor:pointer;font-size:.875rem}
+.sugerencia-item:hover{background:#1e293b}
+
+.btn{padding:.5rem 1rem;border:none;border-radius:.375rem;cursor:pointer;font-size:.875rem}
+.btn-primary{background:#06b6d4;color:#0f172a;font-weight:600}
+.btn-primary:hover{background:#22d3ee}
+.btn-cancel{background:#334155;color:#e2e8f0}
+.btn-cancel:hover{background:#475569}
+.btn-lg{width:100%;padding:.75rem;font-size:1rem;margin-top:.75rem}
+
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+th{color:#94a3b8;font-size:.75rem;text-transform:uppercase;padding:.5rem;text-align:left;border-bottom:1px solid #334155}
+th.num{text-align:right}
+td{padding:.4rem .5rem;border-bottom:1px solid #0f172a;vertical-align:middle}
+td.num{text-align:right;font-family:monospace}
+tr:hover td{background:#0f172a40}
+td .btn-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:.2rem}
+td .btn-del:hover{background:#ef44441a;border-radius:.25rem}
+
+.resumen-row{display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap}
+.campo{flex:1;min-width:8rem}
+.campo label{display:block;font-size:.75rem;color:#94a3b8;margin-bottom:.25rem}
+.campo input,.campo select{width:100%;background:#0f172a;color:#fff;border:1px solid #334155;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem}
+.campo input:focus,.campo select:focus{border-color:#06b6d4;outline:none}
+.total-box{text-align:right;min-width:10rem}
+.total-label{display:block;font-size:.75rem;color:#94a3b8;text-transform:uppercase}
+.total-valor{font-size:1.5rem;font-weight:700;color:#34d399;font-family:monospace}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:#00000080;align-items:center;justify-content:center;z-index:10}
+.modal-overlay.abierto{display:flex}
+.modal{background:#1e293b;border-radius:.75rem;padding:1.5rem;width:90%;max-width:28rem;max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:40rem}
+.modal h2{color:#06b6d4;margin-bottom:1rem}
+.modal-btns{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
+
+.toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#22c55e;color:#0f172a;padding:.5rem 1.5rem;border-radius:.375rem;font-size:.875rem;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20}
+.toast.mostrar{opacity:1}
+.toast.error{background:#ef4444}
+
+.factura-info{margin-bottom:1rem;font-size:.875rem;color:#94a3b8}
+.factura-info strong{color:#e2e8f0}
+.factura-totales{margin-top:1rem;text-align:right;font-size:.875rem}
+.factura-totales .grande{font-size:1.25rem;font-weight:700;color:#34d399;font-family:monospace}
+
+@media print{body{background:#fff;color:#000}.wrapper{max-width:100%}.toast,.modal-overlay,.toolbar,.btn{display:none!important}.card{background:#fff;border:1px solid #ddd}}
