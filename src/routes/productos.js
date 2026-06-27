@@ -5,29 +5,46 @@ const router = Router();
 
 router.get('/', (req, res) => {
   const rows = consultar(
-    'SELECT id, nombre, precio_cop, marca, categoria FROM productos ORDER BY nombre'
+    'SELECT id, nombre, codigo_barras, precio_cop, marca, categoria FROM productos ORDER BY nombre'
   );
   res.json(rows.map(r => ({
     id: r.id,
     p: r.nombre,
+    b: r.codigo_barras || '',
     v: r.precio_cop,
     m: r.marca || '',
     c: r.categoria || ''
   })));
 });
 
+router.get('/codigo/:codigo', (req, res) => {
+  const row = primero(
+    'SELECT id, nombre, codigo_barras, precio_cop, marca, categoria FROM productos WHERE codigo_barras = ?',
+    [req.params.codigo]
+  );
+  if (!row) return res.json(null);
+  res.json({
+    id: row.id,
+    p: row.nombre,
+    b: row.codigo_barras || '',
+    v: row.precio_cop,
+    m: row.marca || '',
+    c: row.categoria || ''
+  });
+});
+
 router.post('/', (req, res) => {
-  const { nombre, precio_cop, marca, categoria } = req.body;
+  const { nombre, codigo_barras, precio_cop, marca, categoria } = req.body;
   if (!nombre || precio_cop == null) {
     return res.status(400).json({ error: 'Faltan campos: nombre, precio_cop' });
   }
   ejecutar(
-    'INSERT INTO productos (nombre, precio_cop, marca, categoria) VALUES (?, ?, ?, ?)',
-    [nombre, precio_cop, marca || '', categoria || '']
+    'INSERT INTO productos (nombre, codigo_barras, precio_cop, marca, categoria) VALUES (?, ?, ?, ?, ?)',
+    [nombre, codigo_barras || '', precio_cop, marca || '', categoria || '']
   );
   const row = primero('SELECT MAX(id) AS id FROM productos');
   res.status(201).json({
-    id: row.id, p: nombre, v: precio_cop, m: marca || '', c: categoria || ''
+    id: row.id, p: nombre, b: codigo_barras || '', v: precio_cop, m: marca || '', c: categoria || ''
   });
 });
 
@@ -40,9 +57,10 @@ router.put('/:id', (req, res) => {
 
   const campos = [];
   const valores = [];
-  const { nombre, precio_cop, marca, categoria } = req.body;
+  const { nombre, codigo_barras, precio_cop, marca, categoria } = req.body;
 
   if (nombre !== undefined) { campos.push('nombre = ?'); valores.push(nombre); }
+  if (codigo_barras !== undefined) { campos.push('codigo_barras = ?'); valores.push(codigo_barras); }
   if (precio_cop !== undefined) { campos.push('precio_cop = ?'); valores.push(precio_cop); }
   if (marca !== undefined) { campos.push('marca = ?'); valores.push(marca); }
   if (categoria !== undefined) { campos.push('categoria = ?'); valores.push(categoria); }
@@ -55,10 +73,10 @@ router.put('/:id', (req, res) => {
   ejecutar(`UPDATE productos SET ${campos.join(', ')} WHERE id = ?`, valores);
 
   const updated = primero(
-    'SELECT id, nombre, precio_cop, marca, categoria FROM productos WHERE id = ?', [id]
+    'SELECT id, nombre, codigo_barras, precio_cop, marca, categoria FROM productos WHERE id = ?', [id]
   );
   res.json({
-    id: updated.id, p: updated.nombre, v: updated.precio_cop,
+    id: updated.id, p: updated.nombre, b: updated.codigo_barras || '', v: updated.precio_cop,
     m: updated.marca || '', c: updated.categoria || ''
   });
 });
@@ -71,10 +89,10 @@ router.delete('/:id', (req, res) => {
 
 router.get('/exportar', (req, res) => {
   const rows = consultar(
-    'SELECT id, nombre, precio_cop, marca, categoria FROM productos ORDER BY nombre'
+    'SELECT id, nombre, codigo_barras, precio_cop, marca, categoria FROM productos ORDER BY nombre'
   );
   res.json(rows.map(r => ({
-    id: r.id, p: r.nombre, v: r.precio_cop,
+    id: r.id, p: r.nombre, b: r.codigo_barras || '', v: r.precio_cop,
     m: r.marca || '', c: r.categoria || ''
   })));
 });
@@ -87,9 +105,10 @@ router.post('/importar', (req, res) => {
   ejecutar('DELETE FROM productos');
   for (const item of data) {
     ejecutar(
-      'INSERT INTO productos (nombre, precio_cop, marca, categoria) VALUES (?, ?, ?, ?)',
+      'INSERT INTO productos (nombre, codigo_barras, precio_cop, marca, categoria) VALUES (?, ?, ?, ?, ?)',
       [
         item.p || item.nombre || '',
+        item.b || item.codigo_barras || '',
         item.v || item.precio_cop || 0,
         item.m || item.marca || '',
         item.c || item.categoria || ''

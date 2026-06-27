@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'precios.db');
 
@@ -24,17 +25,29 @@ async function conectar() {
     CREATE TABLE IF NOT EXISTS productos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre TEXT NOT NULL,
+      codigo_barras TEXT DEFAULT '',
       precio_cop REAL NOT NULL,
       marca TEXT DEFAULT '',
       categoria TEXT DEFAULT ''
     )
   `);
 
+  // Migración: reemplazar tabla tasas por configuracion
+  db.run('DROP TABLE IF EXISTS tasas');
+
   db.run(`
-    CREATE TABLE IF NOT EXISTS tasas (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      usd REAL NOT NULL DEFAULT 0.00024,
-      ves REAL NOT NULL DEFAULT 4.50
+    CREATE TABLE IF NOT EXISTS configuracion (
+      clave TEXT PRIMARY KEY,
+      valor TEXT NOT NULL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      rol TEXT NOT NULL DEFAULT 'admin'
     )
   `);
 
@@ -72,4 +85,8 @@ function primero(sql, params) {
   return rows.length > 0 ? rows[0] : null;
 }
 
-module.exports = { conectar, guardar, ejecutar, consultar, primero };
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+module.exports = { conectar, guardar, ejecutar, consultar, primero, hashPassword };

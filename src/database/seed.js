@@ -1,4 +1,4 @@
-const { conectar, guardar, consultar, ejecutar } = require('./connection');
+const { conectar, guardar, consultar, ejecutar, hashPassword } = require('./connection');
 
 const PRODUCTOS = [
   ["Lata Grande", 3500, "Gen\u00e9rico", "Cervezas y Bebidas"],
@@ -134,9 +134,15 @@ async function sembrar() {
     );
   }
 
-  const tasaExiste = consultar('SELECT COUNT(*) AS count FROM tasas WHERE id = 1');
-  if (tasaExiste[0].count === 0) {
-    ejecutar('INSERT INTO tasas (id, usd, ves) VALUES (1, 0.00024, 4.50)');
+  const configCount = consultar('SELECT COUNT(*) AS count FROM configuracion');
+  if (configCount[0].count === 0) {
+    ejecutar("INSERT INTO configuracion (clave, valor) VALUES ('tasa_usd', '3500')");
+    ejecutar("INSERT INTO configuracion (clave, valor) VALUES ('tasa_ves', '4.7')");
+  }
+
+  const adminExiste = consultar("SELECT COUNT(*) AS count FROM usuarios WHERE username = 'admin'");
+  if (adminExiste[0].count === 0) {
+    ejecutar("INSERT INTO usuarios (username, password_hash, rol) VALUES ('admin', ?, 'admin')", [hashPassword('admin123')]);
   }
 }
 

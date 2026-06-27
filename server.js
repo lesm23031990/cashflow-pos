@@ -1,6 +1,6 @@
 const { app, inicializar } = require('./src/app');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 inicializar().then(() => {
   app.listen(PORT, '0.0.0.0', () => {

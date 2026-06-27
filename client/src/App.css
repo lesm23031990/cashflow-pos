@@ -1,0 +1,99 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+.wrapper { max-width: 1200px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 1.5rem; margin-bottom: 1rem; color: #f1f5f9; }
+
+.tasas { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tasa-item { display: flex; align-items: center; gap: 0.5rem; }
+.tasa-item label { font-size: 0.85rem; color: #94a3b8; }
+.tasa-item input {
+  width: 110px; padding: 6px 10px; border: 1px solid #334155; border-radius: 6px;
+  background: #1e293b; color: #e2e8f0; font-size: 0.9rem;
+}
+.tasa-item input:focus { outline: none; border-color: #06b6d4; }
+
+.toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+.toolbar input[type="text"] {
+  flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid #334155; border-radius: 6px;
+  background: #1e293b; color: #e2e8f0; font-size: 0.9rem;
+}
+.toolbar input:focus { outline: none; border-color: #06b6d4; }
+
+.scan-input { border-color: #f59e0b !important; }
+.scan-input:focus { border-color: #f59e0b !important; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
+
+.btn {
+  padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; white-space: nowrap;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: #06b6d4; color: #0f172a; }
+.btn-primary:hover:not(:disabled) { background: #0891b2; }
+.btn-danger { background: #ef4444; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #dc2626; }
+.btn-cancel { background: #475569; color: #e2e8f0; }
+.btn-cancel:hover:not(:disabled) { background: #64748b; }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  text-align: left; padding: 10px 8px; font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #334155;
+  position: sticky; top: 0; background: #0f172a;
+}
+thead th.num { text-align: right; }
+thead th.acciones-th { width: 80px; text-align: center; }
+tbody td { padding: 8px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+tbody tr:hover { background: #1e293b; }
+tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.precio-cop { color: #fbbf24; }
+.precio-usd { color: #34d399; }
+.precio-ves { color: #f472b6; }
+.cargando, .vacio { text-align: center; padding: 40px 8px !important; color: #64748b; }
+.acciones { text-align: center; white-space: nowrap; }
+.acciones button {
+  background: none; border: none; cursor: pointer; font-size: 1rem;
+  padding: 2px 6px; border-radius: 4px;
+}
+.acciones button:hover { background: #334155; }
+
+.total { margin-top: 0.5rem; font-size: 0.85rem; color: #64748b; }
+
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  align-items: center; justify-content: center; z-index: 100;
+}
+.modal-overlay.abierto { display: flex; }
+.modal {
+  background: #1e293b; border-radius: 12px; padding: 24px; width: 90%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal h2 { margin-bottom: 1rem; color: #f1f5f9; }
+.campo { margin-bottom: 1rem; }
+.campo label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
+.campo input, .campo select {
+  width: 100%; padding: 8px 12px; border: 1px solid #334155; border-radius: 6px;
+  background: #0f172a; color: #e2e8f0; font-size: 0.9rem;
+}
+.campo input:focus, .campo select:focus { outline: none; border-color: #06b6d4; }
+.modal-btns { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+.modal-detail { max-width: 480px; }
+.detail-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+.detail-field { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #0f172a; border-radius: 6px; }
+.detail-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+.detail-value { font-size: 1rem; font-weight: 600; color: #e2e8f0; }
+.detail-name { font-size: 1.1rem; color: #f1f5f9; }
+.detail-barcode { font-family: monospace; color: #fbbf24; letter-spacing: 0.05em; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: #059669; color: #fff; padding: 10px 24px; border-radius: 8px;
+  font-size: 0.9rem; opacity: 0; transition: all 0.3s ease; z-index: 200;
+}
+.toast.mostrar { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: #dc2626; }

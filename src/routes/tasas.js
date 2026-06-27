@@ -1,11 +1,18 @@
 const { Router } = require('express');
-const { primero, ejecutar } = require('../database/connection');
+const { consultar, ejecutar } = require('../database/connection');
 
 const router = Router();
 
+function obtenerConfig() {
+  const rows = consultar('SELECT clave, valor FROM configuracion');
+  const cfg = {};
+  for (const r of rows) cfg[r.clave] = parseFloat(r.valor);
+  return cfg;
+}
+
 router.get('/', (req, res) => {
-  const row = primero('SELECT usd, ves FROM tasas WHERE id = 1');
-  res.json({ usd: row.usd, ves: row.ves });
+  const cfg = obtenerConfig();
+  res.json({ usd: cfg.tasa_usd || 3500, ves: cfg.tasa_ves || 4.7 });
 });
 
 router.put('/', (req, res) => {
@@ -13,7 +20,8 @@ router.put('/', (req, res) => {
   if (usd == null || ves == null) {
     return res.status(400).json({ error: 'Faltan usd y ves' });
   }
-  ejecutar('UPDATE tasas SET usd = ?, ves = ? WHERE id = 1', [usd, ves]);
+  ejecutar("UPDATE configuracion SET valor = ? WHERE clave = 'tasa_usd'", [String(usd)]);
+  ejecutar("UPDATE configuracion SET valor = ? WHERE clave = 'tasa_ves'", [String(ves)]);
   res.json({ usd, ves });
 });
 
