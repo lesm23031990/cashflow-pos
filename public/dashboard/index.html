@@ -9,7 +9,14 @@
 <body>
 <div class="app">
   <header class="topbar">
-    <h1 class="topbar-title">Panel de Control</h1>
+    <div class="topbar-left">
+      <h1 class="topbar-title">Panel de Control</h1>
+      <span class="tasas-badge" onclick="abrirModalTasas(); return false;" title="Editar tasas de cambio">
+        <span class="tasa-chip">USD <span id="badgeUsd">3.500</span></span>
+        <span class="tasa-chip">VES <span id="badgeVes">4,7</span></span>
+        <span class="tasa-edit-icon">✎</span>
+      </span>
+    </div>
     <nav class="topbar-nav">
       <a href="/facturacion">Facturaci&oacute;n</a>
       <a href="/admin">Admin</a>
@@ -78,6 +85,28 @@
     </section>
   </div>
 </div>
+
+<!-- Modal editar tasas -->
+<div class="modal-overlay" id="modalTasas">
+  <div class="modal modal-sm">
+    <h2>Editar Tasas de Cambio</h2>
+    <p class="tasas-desc">Las nuevas tasas se aplicar&aacute;n a todas las facturas futuras.</p>
+    <div class="field">
+      <label class="field-label">1 USD = ? COP</label>
+      <input type="number" id="editTasaUsd" class="inp" step="1" min="0">
+    </div>
+    <div class="field">
+      <label class="field-label">1 VES = ? COP</label>
+      <input type="number" id="editTasaVes" class="inp" step="any" min="0">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="cerrarModal('modalTasas')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarTasas()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script src="js/app.js"></script>
 </body>

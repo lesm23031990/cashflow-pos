@@ -543,8 +543,17 @@
   /* ── Consultar productos (modal) ──────────────── */
   var _tasasCache = { usd: 3500, ves: 4.7 };
 
+  function actualizarBadgeTasas() {
+    var t = _tasasCache;
+    $('badgeUsd').textContent = Number(t.usd).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    $('badgeVes').textContent = Number(t.ves).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
   function cargarTasas() {
-    api('/api/tasas').then(function (t) { _tasasCache = t; });
+    api('/api/tasas').then(function (t) {
+      _tasasCache = t;
+      actualizarBadgeTasas();
+    });
   }
 
   function fmtCons(n, frac) {
@@ -608,6 +617,32 @@
   $('consBuscar').addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { this.value = ''; renderConsultar(productosCache); }
   });
+
+  window.abrirModalTasas = function () {
+    $('editTasaUsd').value = _tasasCache.usd;
+    $('editTasaVes').value = _tasasCache.ves;
+    abrirModal('modalTasas');
+  };
+
+  window.guardarTasas = function () {
+    var usd = parseFloat($('editTasaUsd').value);
+    var ves = parseFloat($('editTasaVes').value);
+    if (!usd || usd <= 0) { mostrarToast('Tasa USD inv\u00e1lida', true); return; }
+    if (!ves || ves <= 0) { mostrarToast('Tasa VES inv\u00e1lida', true); return; }
+
+    api('/api/tasas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usd: usd, ves: ves })
+    }).then(function (t) {
+      _tasasCache = t;
+      actualizarBadgeTasas();
+      cerrarModal('modalTasas');
+      mostrarToast('Tasas actualizadas');
+      // Re-render consultar si est\u00e1 abierto
+      if ($('modalConsultar').classList.contains('abierto')) renderConsultar(productosCache);
+    }).catch(function (err) { mostrarToast(err.message, true); });
+  };
 
   cargarTasas();
 

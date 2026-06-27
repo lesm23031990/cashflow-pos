@@ -4,10 +4,16 @@ body{background:#0f172a;color:#e2e8f0;font-family:system-ui,sans-serif;min-heigh
 
 /* Topbar */
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.5rem}
+.topbar-left{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
 .topbar-title{color:#06b6d4;font-size:1.25rem;font-weight:700}
 .topbar-nav{display:flex;gap:.25rem}
 .topbar-nav a{color:#64748b;text-decoration:none;font-size:.8125rem;padding:.3rem .65rem;border-radius:.375rem;transition:.15s}
 .topbar-nav a:hover{color:#e2e8f0;background:#1e293b}
+
+/* Tasas badge */
+.tasas-badge{display:inline-flex;align-items:center;gap:.3rem;background:#1e293b;border:1px solid #334155;border-radius:2rem;padding:.2rem .5rem .2rem .65rem;font-size:.75rem;cursor:default}
+.tasa-chip{color:#94a3b8}
+.tasa-chip span{color:#34d399;font-weight:600;font-family:monospace;margin-left:.15rem}
 
 /* Tasas */
 .tasas{display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap}

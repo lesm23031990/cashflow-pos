@@ -12,6 +12,16 @@ body{background:#0b1120;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 /* ── Topbar ────────────────────────────────────────── */
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid #1e293b;flex-shrink:0}
 .topbar-title{color:#06b6d4;font-size:1.25rem;font-weight:700}
+.topbar-left{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+
+/* Tasas badge */
+.tasas-badge{display:inline-flex;align-items:center;gap:.3rem;background:#131c2e;border:1px solid #1e293b;border-radius:2rem;padding:.2rem .5rem .2rem .65rem;cursor:pointer;transition:.15s;font-size:.75rem}
+.tasas-badge:hover{border-color:#06b6d4;background:#1a2740}
+.tasa-chip{color:#94a3b8}
+.tasa-chip span{color:#34d399;font-weight:600;font-family:monospace;margin-left:.15rem}
+.tasa-edit-icon{color:#64748b;font-size:.65rem;margin-left:.15rem}
+.tasas-badge:hover .tasa-edit-icon{color:#06b6d4}
+.tasas-desc{font-size:.8125rem;color:#64748b;margin-bottom:.75rem}
 .topbar-nav{display:flex;gap:.25rem}
 .topbar-nav a{color:#64748b;text-decoration:none;font-size:.8125rem;padding:.3rem .65rem;border-radius:.375rem;transition:.15s}
 .topbar-nav a:hover{color:#e2e8f0;background:#1e293b}

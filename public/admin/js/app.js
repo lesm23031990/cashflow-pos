@@ -35,6 +35,8 @@
     api('/api/tasas').then(function (t) {
       tasaUsd.value = t.usd;
       tasaVes.value = t.ves;
+      document.getElementById('badgeUsd').textContent = Number(t.usd).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      document.getElementById('badgeVes').textContent = Number(t.ves).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     }).catch(function () { mostrarToast('Error al cargar tasas', true); });
     cargarProductos();
   }
