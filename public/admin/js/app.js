@@ -95,7 +95,7 @@
       var idx = productos.indexOf(item);
       var cop = item.v;
       var usdVal = usd > 0 ? cop / usd : 0;
-      var vesVal = ves > 0 ? cop * ves : 0;
+      var vesVal = ves > 0 ? cop / ves : 0;
 
       var tr = document.createElement('tr');
       tr.innerHTML =
