@@ -540,6 +540,77 @@
 
   window.cerrarModal = cerrarModal;
 
+  /* ── Consultar productos (modal) ──────────────── */
+  var _tasasCache = { usd: 3500, ves: 4.7 };
+
+  function cargarTasas() {
+    api('/api/tasas').then(function (t) { _tasasCache = t; });
+  }
+
+  function fmtCons(n, frac) {
+    return Number(n).toLocaleString('es-CO', { minimumFractionDigits: frac || 0, maximumFractionDigits: frac || 0 });
+  }
+
+  window.abrirConsultar = function () {
+    abrirModal('modalConsultar');
+    setTimeout(function () { $('consBuscar').focus(); }, 100);
+    renderConsultar(productosCache);
+  };
+
+  function renderConsultar(lista) {
+    var tbody = $('consBody');
+    if (!lista || lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#475569;padding:1rem">Sin resultados</td></tr>';
+      return;
+    }
+    var usd = _tasasCache.usd || 3500;
+    var ves = _tasasCache.ves || 4.7;
+    tbody.innerHTML = '';
+    for (var i = 0; i < lista.length; i++) {
+      var item = lista[i];
+      var cop = item.v;
+      var tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.innerHTML =
+        '<td>' + esc(item.p) + '</td>' +
+        '<td>' + esc(item.m || '') + '</td>' +
+        '<td class="col-price">$' + fmtCons(cop) + '</td>' +
+        '<td class="col-price">$' + fmtCons(cop / usd, 2) + '</td>' +
+        '<td class="col-price">Bs ' + fmtCons(cop / ves, 2) + '</td>';
+      tr.addEventListener('click', function () {
+        var idx = parseInt(this.dataset.index);
+        var prod = lista[idx];
+        if (prod) {
+          $('buscarProd').value = prod.p;
+          $('buscarProd')._prod = prod;
+          cerrarModal('modalConsultar');
+          setTimeout(function () { $('buscarProd').focus(); }, 150);
+        }
+      });
+      tr.dataset.index = i;
+      tbody.appendChild(tr);
+    }
+  }
+
+  var _consTimer;
+  $('consBuscar').addEventListener('input', function () {
+    clearTimeout(_consTimer);
+    var q = this.value.trim().toLowerCase();
+    if (!q) { renderConsultar(productosCache); return; }
+    _consTimer = setTimeout(function () {
+      var filtrados = productosCache.filter(function (p) {
+        return (p.p + ' ' + (p.m || '') + ' ' + (p.c || '')).toLowerCase().indexOf(q) !== -1;
+      });
+      renderConsultar(filtrados);
+    }, 150);
+  });
+
+  $('consBuscar').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { this.value = ''; renderConsultar(productosCache); }
+  });
+
+  cargarTasas();
+
   cargarClientes();
   cargarProductos();
   cargarMetodosPago();

@@ -13,7 +13,7 @@
     <nav class="topbar-nav">
       <a href="/dashboard">Dashboard</a>
       <a href="/admin">Admin</a>
-      <a href="/busqueda.html" target="_blank" class="btn-consultar">Consultar</a>
+      <a href="#" class="btn-consultar" onclick="abrirConsultar(); return false;">Consultar</a>
     </nav>
   </header>
 
@@ -226,6 +226,25 @@
     <div class="modal-btns">
       <button class="btn btn-outline" onclick="cerrarModal('modalFactura')">Cerrar</button>
       <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal consultar productos -->
+<div class="modal-overlay" id="modalConsultar">
+  <div class="modal modal-cons">
+    <div class="cons-head">
+      <h2>Consultar Productos</h2>
+      <button class="btn-cons-cerrar" onclick="cerrarModal('modalConsultar')">✖</button>
+    </div>
+    <input type="text" id="consBuscar" class="inp cons-search" placeholder="Escribe para buscar..." autofocus>
+    <div class="cons-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Marca</th><th class="col-price">COP</th><th class="col-price">USD</th><th class="col-price">VES</th></tr>
+        </thead>
+        <tbody id="consBody"></tbody>
+      </table>
     </div>
   </div>
 </div>

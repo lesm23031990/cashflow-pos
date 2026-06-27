@@ -171,6 +171,20 @@ tr.sel td:first-child{border-left:2px solid #06b6d4}
 .req{color:#ef4444}
 .datos-cliente{transition:opacity .15s}
 
+/* ── Consultar modal ────────────────────────────── */
+.modal-cons{max-width:44rem;padding:.75rem .875rem .875rem}
+.cons-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.cons-head h2{color:#06b6d4;font-size:1rem;margin:0}
+.btn-cons-cerrar{background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;padding:.2rem}
+.btn-cons-cerrar:hover{color:#e2e8f0}
+.cons-search{width:100%;background:#0b1120;color:#e2e8f0;border:1px solid #1e293b;border-radius:.4rem;padding:.55rem .75rem;font-size:.9375rem;outline:none;margin-bottom:.5rem}
+.cons-search:focus{border-color:#06b6d4}
+.cons-search:focus{border-color:#06b6d4;box-shadow:0 0 0 2px #06b6d420}
+.cons-table-wrap{max-height:55vh;overflow-y:auto}
+.cons-table-wrap td{cursor:pointer}
+.cons-table-wrap tr:hover td{background:#06b6d410}
+.cons-table-wrap tr.seleccionado td{background:#06b6d420;color:#06b6d4;font-weight:600}
+
 /* ── Media ──────────────────────────────────────────── */
 @media(max-width:640px){
   .resumen-grid{flex-direction:column;gap:.5rem}
