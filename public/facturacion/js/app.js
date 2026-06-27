@@ -7,11 +7,11 @@
   var clientesCache = [];
   var selectedIdx = -1;
   var suggestIdx = -1;
+  var facturaEditandoId = null;
 
   var $ = function (id) { return document.getElementById(id); };
   var toast = $('toast');
 
-  /* ── Helpers ───────────────────────────────────── */
   function api(path, opts) {
     return fetch(path, opts || {}).then(function (r) {
       if (!r.ok) return r.json().then(function (e) { throw new Error(e.error || r.statusText); });
@@ -29,7 +29,7 @@
     toast.textContent = msg;
     toast.className = 'toast mostrar' + (error ? ' error' : '');
     clearTimeout(toast._timer);
-    toast._timer = setTimeout(function () { toast.classList.remove('mostrar'); }, 2000);
+    toast._timer = setTimeout(function () { toast.classList.remove('mostrar'); }, 2500);
   }
 
   function abrirModal(id) { $(id).classList.add('abierto'); }
@@ -39,6 +39,13 @@
     frac = frac !== undefined ? frac : 0;
     return Number(n).toLocaleString('es-CO', { minimumFractionDigits: frac, maximumFractionDigits: frac });
   }
+
+  function badge(status) {
+    var cls = status === 'pagada' ? 'badge-ok' : 'badge-warn';
+    return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
+  }
+
+  var METODOS = ['Efectivo', 'D\u00e9bito', 'Pago M\u00f3vil', 'Bancolombia'];
 
   /* ── Clientes ──────────────────────────────────── */
   function cargarClientes() {
@@ -194,10 +201,10 @@
       tr.dataset.index = i;
       tr.innerHTML =
         '<td>' + esc(d.producto_nombre) + '</td>' +
-        '<td class="col-qty">' + d.cantidad + '</td>' +
+        '<td class="col-qty edi-qty" data-idx="' + i + '">' + d.cantidad + '</td>' +
         '<td class="col-price">$' + fmt(d.precio_unitario) + '</td>' +
         '<td class="col-price">$' + fmt(d.subtotal) + '</td>' +
-        '<td class="col-del"><button class="btn-del" data-idx="' + i + '" title="Quitar (&uarr;&darr; + Del)">✖</button></td>';
+        '<td class="col-del"><button class="btn-del" data-idx="' + i + '" title="Quitar">\u2716</button></td>';
       tr.addEventListener('click', function () {
         var idx = parseInt(this.dataset.index);
         selectedIdx = idx;
@@ -205,16 +212,41 @@
       });
       tbody.appendChild(tr);
     }
-    // Delegación para botones de eliminar
     tbody.addEventListener('click', function (e) {
       var btn = e.target.closest('.btn-del');
-      if (btn) {
-        var idx = parseInt(btn.dataset.idx);
-        quitarDetalle(idx);
-      }
+      if (btn) { quitarDetalle(parseInt(btn.dataset.idx)); }
     });
     actualizarTotal();
   }
+
+  // Inline qty editing: dblclick on qty cell
+  $('detalleBody').addEventListener('dblclick', function (e) {
+    var cell = e.target.closest('.edi-qty');
+    if (!cell) return;
+    var idx = parseInt(cell.dataset.idx);
+    var oldVal = detalles[idx].cantidad;
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.className = 'qty-inline';
+    inp.value = oldVal;
+    inp.min = 1;
+    cell.textContent = '';
+    cell.appendChild(inp);
+    inp.focus();
+    inp.select();
+    function commit() {
+      var v = parseInt(inp.value);
+      if (isNaN(v) || v < 1) v = oldVal;
+      detalles[idx].cantidad = v;
+      detalles[idx].subtotal = v * detalles[idx].precio_unitario;
+      renderDetalle();
+    }
+    inp.addEventListener('blur', commit);
+    inp.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
+      if (ev.key === 'Escape') { ev.preventDefault(); cell.textContent = oldVal; }
+    });
+  });
 
   function actualizarTotal() {
     var moneda = $('selMoneda').value;
@@ -228,11 +260,9 @@
   $('selMoneda').addEventListener('change', actualizarTotal);
   $('inputDescuento').addEventListener('input', actualizarTotal);
 
-  /* ── Keyboard Navigation for suggestions ────────── */
   $('buscarProd').addEventListener('keydown', function (e) {
     var suggest = $('resultadosBusqueda');
     var items = suggest.querySelectorAll('.suggest-item');
-
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (!suggest.classList.contains('visible') || items.length === 0) return;
@@ -258,7 +288,6 @@
     }
   });
 
-  /* ── Generar factura ────────────────────────────── */
   window.generarFactura = function () {
     var clienteId = parseInt($('selCliente').value);
     if (!clienteId) { mostrarToast('Selecciona un cliente', true); $('selCliente').focus(); return; }
@@ -275,6 +304,7 @@
         cliente_id: clienteId,
         moneda: $('selMoneda').value,
         descuento: parseFloat($('inputDescuento').value) || 0,
+        metodo_pago: $('selMetodoPago').value,
         detalles: detalles.map(function (d) { return { producto_id: d.producto_id, cantidad: d.cantidad, precio_unitario: d.precio_unitario }; })
       })
     }).then(function (factura) {
@@ -283,6 +313,7 @@
       selectedIdx = -1;
       renderDetalle();
       $('inputDescuento').value = 0;
+      $('selMetodoPago').value = '';
       cargarFacturas();
       verFactura(factura);
     }).catch(function (err) {
@@ -293,13 +324,14 @@
     });
   };
 
-  /* ── Nueva factura ──────────────────────────────── */
   window.nuevaFactura = function () {
     if (detalles.length > 0 && !confirm('Limpiar factura actual?')) return;
     detalles = [];
     selectedIdx = -1;
+    facturaEditandoId = null;
     renderDetalle();
     $('inputDescuento').value = 0;
+    $('selMetodoPago').value = '';
     $('selCliente').value = '';
     $('selMoneda').value = 'COP';
     $('buscarProd').value = '';
@@ -308,15 +340,33 @@
     mostrarToast('Factura limpiada');
   };
 
-  /* ── Ver factura ────────────────────────────────── */
+  function poblarSelect(sel, opciones, valor) {
+    sel.innerHTML = '';
+    opciones.forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o;
+      opt.textContent = o;
+      sel.appendChild(opt);
+    });
+    if (valor) sel.value = valor;
+  }
+
   function verFactura(f) {
+    facturaEditandoId = f.id;
     $('facturaNum').textContent = f.id;
-    var html = '<div class="factura-info">';
-    html += '<p><strong>Cliente:</strong> ' + esc(f.cliente_nombre) + '</p>';
-    html += '<p><strong>Fecha:</strong> ' + f.fecha + '</p>';
-    html += '<p><strong>Moneda:</strong> ' + f.moneda + '</p>';
-    html += '</div>';
-    html += '<table><thead><tr><th>Producto</th><th class="col-qty">Cant</th><th class="col-price">Precio</th><th class="col-price">Subtotal</th></tr></thead><tbody>';
+
+    // Meta: status + pago
+    var meta = '<div class="factura-meta-row">';
+    meta += '<span class="meta-item"><strong>Cliente:</strong> ' + esc(f.cliente_nombre) + '</span>';
+    meta += '<span class="meta-item"><strong>Fecha:</strong> ' + f.fecha + '</span>';
+    meta += '<span class="meta-item"><strong>Moneda:</strong> ' + f.moneda + '</span>';
+    meta += '<span class="meta-item"><strong>Status:</strong> ' + badge(f.status || 'en espera') + '</span>';
+    meta += '<span class="meta-item"><strong>Pago:</strong> ' + esc(f.metodo_pago || '—') + '</span>';
+    meta += '</div>';
+    $('facturaInfo').innerHTML = meta;
+
+    // Detalles
+    var html = '<table><thead><tr><th>Producto</th><th class="col-qty">Cant</th><th class="col-price">Precio</th><th class="col-price">Subtotal</th></tr></thead><tbody>';
     (f.detalles || []).forEach(function (d) {
       html += '<tr><td>' + esc(d.producto_nombre) + '</td><td class="col-qty">' + d.cantidad + '</td><td class="col-price">$' + fmt(d.precio_unitario) + '</td><td class="col-price">$' + fmt(d.subtotal) + '</td></tr>';
     });
@@ -326,21 +376,65 @@
     html += '<p>Subtotal: ' + sim + fmt(f.subtotal) + '</p>';
     if (f.descuento > 0) html += '<p>Descuento: -' + sim + fmt(f.descuento) + '</p>';
     html += '<p class="grande">Total: ' + sim + fmt(f.total) + '</p>';
+    // USD / VES equivalents
+    if (f.total_usd !== undefined) {
+      html += '<p class="equiv">USD: $' + fmt(f.total_usd, 2) + '</p>';
+    }
+    if (f.total_ves !== undefined) {
+      html += '<p class="equiv">VES: Bs ' + fmt(f.total_ves, 2) + '</p>';
+    }
     html += '</div>';
     $('facturaContenido').innerHTML = html;
+
+    // Edit tools (solo si en espera)
+    var editTools = $('facturaEditTools');
+    if (f.status === 'en espera') {
+      poblarSelect($('editStatus'), ['en espera', 'pagada'], f.status);
+      poblarSelect($('editMetodoPago'), ['', 'Efectivo', 'D\u00e9bito', 'Pago M\u00f3vil', 'Bancolombia'], f.metodo_pago || '');
+      editTools.style.display = 'block';
+    } else {
+      editTools.style.display = 'none';
+    }
+
     abrirModal('modalFactura');
   }
+
+  window.guardarCambiosFactura = function () {
+    var id = facturaEditandoId;
+    if (!id) return;
+    var status = $('editStatus').value;
+    var metodo_pago = $('editMetodoPago').value;
+    var btn = $('btnGuardarCambios');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    api('/api/facturas/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: status, metodo_pago: metodo_pago })
+    }).then(function (f) {
+      mostrarToast('Factura #' + id + ' actualizada');
+      cargarFacturas();
+      verFactura(f);
+    }).catch(function (err) {
+      mostrarToast(err.message || 'Error', true);
+    }).finally(function () {
+      btn.disabled = false;
+      btn.textContent = 'Guardar Cambios';
+    });
+  };
 
   function cargarFacturas() {
     api('/api/facturas').then(function (data) {
       var tbody = $('facturasBody');
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#475569;padding:.75rem;font-size:.8125rem">Sin facturas a&uacute;n</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#475569;padding:.75rem;font-size:.8125rem">Sin facturas a&uacute;n</td></tr>';
         return;
       }
       tbody.innerHTML = '';
       data.slice(0, 20).forEach(function (f) {
         var sim = f.moneda === 'COP' ? '$' : f.moneda === 'USD' ? '$' : 'Bs ';
+        var est = f.status || 'en espera';
         var tr = document.createElement('tr');
         tr.innerHTML =
           '<td>' + f.id + '</td>' +
@@ -348,7 +442,9 @@
           '<td>' + f.fecha.slice(0, 10) + '</td>' +
           '<td class="col-price">' + sim + fmt(f.total) + '</td>' +
           '<td>' + f.moneda + '</td>' +
-          '<td class="col-del"><button class="btn-edit" style="background:none;border:none;color:#06b6d4;cursor:pointer;font-size:.8125rem" onclick="verFacturaDesdeApi(' + f.id + ')">Ver</button></td>';
+          '<td>' + badge(est) + '</td>' +
+          '<td>' + esc(f.metodo_pago || '—') + '</td>' +
+          '<td class="col-del"><button class="btn-act" onclick="verFacturaDesdeApi(' + f.id + ')">Ver</button></td>';
         tbody.appendChild(tr);
       });
     });
@@ -360,9 +456,7 @@
     }).catch(function (err) { mostrarToast(err.message, true); });
   };
 
-  /* ── Keyboard Shortcuts ─────────────────────────── */
   document.addEventListener('keydown', function (e) {
-    // Ignorar si hay un modal abierto (excepto cerrar con Esc)
     var modalAbierto = document.querySelector('.modal-overlay.abierto');
     if (modalAbierto) {
       if (e.key === 'Escape') {
@@ -371,38 +465,16 @@
       }
       return;
     }
-
-    // Ignorar si está escribiendo en un input (excepto Escape y Enter)
     var tag = e.target.tagName;
     var isInput = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
 
     switch (e.key) {
-      case 'F1':
-        e.preventDefault();
-        abrirModal('modalAyuda');
-        break;
-      case 'F2':
-        e.preventDefault();
-        $('selCliente').focus();
-        break;
-      case 'F3':
-        e.preventDefault();
-        $('buscarProd').focus();
-        $('buscarProd').select();
-        break;
-      case 'F4':
-        e.preventDefault();
-        $('selMoneda').focus();
-        break;
-      case 'F5':
-        e.preventDefault();
-        $('inputDescuento').focus();
-        $('inputDescuento').select();
-        break;
-      case 'F6':
-        e.preventDefault();
-        nuevaFactura();
-        break;
+      case 'F1': e.preventDefault(); abrirModal('modalAyuda'); break;
+      case 'F2': e.preventDefault(); $('selCliente').focus(); break;
+      case 'F3': e.preventDefault(); $('buscarProd').focus(); $('buscarProd').select(); break;
+      case 'F4': e.preventDefault(); $('selMoneda').focus(); break;
+      case 'F5': e.preventDefault(); $('inputDescuento').focus(); $('inputDescuento').select(); break;
+      case 'F6': e.preventDefault(); nuevaFactura(); break;
       case 'Escape':
         if (isInput && $('buscarProd') === e.target && e.target.value) {
           e.target.value = '';
@@ -420,21 +492,10 @@
         }
         break;
     }
-
-    // Ctrl+Enter → Generar
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      generarFactura();
-    }
-
-    // Ctrl+N → Nueva
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) {
-      e.preventDefault();
-      nuevaFactura();
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generarFactura(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); nuevaFactura(); }
   });
 
-  // Cerrar modales con click fuera
   document.querySelectorAll('.modal-overlay').forEach(function (el) {
     el.addEventListener('click', function (e) {
       if (e.target === el) el.classList.remove('abierto');
@@ -443,7 +504,6 @@
 
   window.cerrarModal = cerrarModal;
 
-  /* ── Init ───────────────────────────────────────── */
   cargarClientes();
   cargarProductos();
   cargarFacturas();

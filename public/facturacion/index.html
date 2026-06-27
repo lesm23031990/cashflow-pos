@@ -90,17 +90,27 @@
             <label class="field-label" for="inputDescuento">Descuento <kbd class="chip-sm">F5</kbd></label>
             <input type="number" id="inputDescuento" class="inp" value="0" min="0" step="100" tabindex="6">
           </div>
+          <div class="field">
+            <label class="field-label">M&eacute;todo de Pago</label>
+            <select id="selMetodoPago" class="sel" tabindex="7">
+              <option value="">Seleccionar...</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Débito">D&eacute;bito</option>
+              <option value="Pago Móvil">Pago M&oacute;vil</option>
+              <option value="Bancolombia">Bancolombia</option>
+            </select>
+          </div>
           <div class="total-box">
             <span class="total-label">TOTAL</span>
             <span class="total-valor" id="totalValor">$0</span>
           </div>
         </div>
         <div class="action-row">
-          <button class="btn btn-secondary" onclick="nuevaFactura()" tabindex="8">
+          <button class="btn btn-secondary" onclick="nuevaFactura()" tabindex="9">
             <span class="btn-label">Nueva</span>
             <kbd class="chip-sm chip-invert">F6</kbd>
           </button>
-          <button class="btn btn-primary btn-lg" id="btnGenerar" onclick="generarFactura()" tabindex="7">
+          <button class="btn btn-primary btn-lg" id="btnGenerar" onclick="generarFactura()" tabindex="8">
             <span class="btn-label">Generar Factura</span>
             <kbd class="chip-sm chip-invert">Ctrl+Enter</kbd>
           </button>
@@ -123,6 +133,8 @@
                 <th>Fecha</th>
                 <th class="col-price">Total</th>
                 <th>Moneda</th>
+                <th>Status</th>
+                <th>Pago</th>
                 <th class="col-del"></th>
               </tr>
             </thead>
@@ -187,11 +199,25 @@
   </div>
 </div>
 
-<!-- Modal ver factura -->
+<!-- Modal ver / editar factura -->
 <div class="modal-overlay" id="modalFactura">
   <div class="modal modal-lg">
     <h2>Factura #<span id="facturaNum"></span></h2>
+    <div id="facturaInfo" class="factura-meta"></div>
     <div id="facturaContenido"></div>
+    <div id="facturaEditTools" class="factura-edit" style="display:none">
+      <div class="edit-row">
+        <div class="field">
+          <label class="field-label">Status</label>
+          <select id="editStatus" class="sel"></select>
+        </div>
+        <div class="field">
+          <label class="field-label">M&eacute;todo de Pago</label>
+          <select id="editMetodoPago" class="sel"></select>
+        </div>
+        <button class="btn btn-primary" id="btnGuardarCambios" onclick="guardarCambiosFactura()">Guardar Cambios</button>
+      </div>
+    </div>
     <div class="modal-btns">
       <button class="btn btn-outline" onclick="cerrarModal('modalFactura')">Cerrar</button>
       <button class="btn btn-primary" onclick="window.print()">Imprimir</button>

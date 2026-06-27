@@ -138,11 +138,34 @@ tr.sel td:first-child{border-left:2px solid #06b6d4}
 .toast.mostrar{opacity:1}
 .toast.error{background:#ef4444;color:#fff}
 
+/* ── Badges ──────────────────────────────────────────── */
+.badge{display:inline-block;font-size:.6875rem;padding:.15rem .5rem;border-radius:1rem;font-weight:600;text-transform:capitalize}
+.badge-ok{background:#22c55e20;color:#22c55e;border:1px solid #22c55e40}
+.badge-warn{background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40}
+
+/* ── Inline qty editing ────────────────────────────── */
+.qty-inline{width:3.5rem;text-align:center;background:#0b1120;color:#e2e8f0;border:1px solid #06b6d4;border-radius:.3rem;padding:.2rem;font-size:.8125rem;outline:none;font-family:monospace}
+.edi-qty{cursor:pointer}
+.edi-qty:hover{background:#06b6d410}
+
 /* ── Factura view ────────────────────────────────────── */
 .factura-info{font-size:.8125rem;color:#64748b;margin-bottom:.75rem;line-height:1.7}
 .factura-info strong{color:#e2e8f0}
+.factura-meta{font-size:.8125rem;color:#94a3b8;margin-bottom:.75rem;line-height:1.7}
+.factura-meta-row{display:flex;gap:.75rem;flex-wrap:wrap}
+.meta-item{white-space:nowrap}
+.meta-item strong{color:#e2e8f0}
 .factura-totales{margin-top:.75rem;text-align:right;font-size:.8125rem}
 .factura-totales .grande{font-size:1.125rem;font-weight:700;color:#34d399;font-family:monospace}
+.factura-totales .equiv{color:#64748b;font-size:.75rem;margin-top:.15rem}
+
+/* ── Edit tools (modal) ──────────────────────────────── */
+.factura-edit{border-top:1px solid #1e293b;margin-top:.75rem;padding-top:.75rem}
+.edit-row{display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap}
+.edit-row .field{flex:1;min-width:8rem}
+#btnGuardarCambios{white-space:nowrap}
+.btn-act{background:none;border:none;color:#06b6d4;cursor:pointer;font-size:.8125rem;padding:.2rem .4rem;border-radius:.25rem}
+.btn-act:hover{background:#06b6d41a}
 
 /* ── Media ──────────────────────────────────────────── */
 @media(max-width:640px){
@@ -156,4 +179,4 @@ tr.sel td:first-child{border-left:2px solid #06b6d4}
 }
 
 /* ── Print ──────────────────────────────────────────── */
-@media print{body{background:#fff;color:#000}.shortcuts-bar,.modal-overlay,.topbar-nav,.btn,.card-head .chip,.search-row,.search-hint,.action-row{display:none!important}.card{break-inside:avoid;border:1px solid #ddd!important;background:#fff!important;border-left:3px solid #999!important}.card-body{padding:.5rem}.total-valor{color:#000}.app{height:auto}.workspace{padding-bottom:0}}
+@media print{body{background:#fff;color:#000}.shortcuts-bar,.modal-overlay,.topbar-nav,.btn,.card-head .chip,.search-row,.search-hint,.action-row,.factura-edit{display:none!important}.card{break-inside:avoid;border:1px solid #ddd!important;background:#fff!important;border-left:3px solid #999!important}.card-body{padding:.5rem}.badge{border:1px solid #999!important;color:#000!important;background:#fff!important}.total-valor{color:#000}.app{height:auto}.workspace{padding-bottom:0}}

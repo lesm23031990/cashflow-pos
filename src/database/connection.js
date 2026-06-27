@@ -20,6 +20,10 @@ async function conectar() {
 
   db.run('PRAGMA foreign_keys = ON');
 
+  // Migraciones
+  try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
+  try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
+
   db.run(`
     CREATE TABLE IF NOT EXISTS productos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
