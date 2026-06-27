@@ -6,6 +6,7 @@ const productosRouter = require('./routes/productos');
 const tasasRouter = require('./routes/tasas');
 const clientesRouter = require('./routes/clientes');
 const facturasRouter = require('./routes/facturas');
+const metodosPagoRouter = require('./routes/metodos_pago');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/productos', productosRouter);
 app.use('/api/tasas', tasasRouter);
 app.use('/api/clientes', clientesRouter);
 app.use('/api/facturas', facturasRouter);
+app.use('/api/metodos-pago', metodosPagoRouter);
 
 // Redirigir rutas al index.html de cada secci&oacute;n
 app.get('/admin', (req, res) => {

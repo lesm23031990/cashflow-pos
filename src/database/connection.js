@@ -25,6 +25,13 @@ async function conectar() {
   try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS metodos_pago (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS productos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre TEXT NOT NULL,

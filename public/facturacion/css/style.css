@@ -166,6 +166,8 @@ tr.sel td:first-child{border-left:2px solid #06b6d4}
 #btnGuardarCambios{white-space:nowrap}
 .btn-act{background:none;border:none;color:#06b6d4;cursor:pointer;font-size:.8125rem;padding:.2rem .4rem;border-radius:.25rem}
 .btn-act:hover{background:#06b6d41a}
+.req{color:#ef4444}
+.datos-cliente{transition:opacity .15s}
 
 /* ── Media ──────────────────────────────────────────── */
 @media(max-width:640px){

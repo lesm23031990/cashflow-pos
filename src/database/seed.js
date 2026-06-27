@@ -138,6 +138,19 @@ async function sembrar() {
   if (tasaExiste[0].count === 0) {
     ejecutar('INSERT INTO tasas (id, usd, ves) VALUES (1, 3500, 4.70)');
   }
+
+  const mostrador = consultar("SELECT id FROM clientes WHERE nombre = 'Mostrador'");
+  if (mostrador.length === 0) {
+    ejecutar("INSERT INTO clientes (nombre, documento, telefono, direccion) VALUES ('Mostrador', '', '', '')");
+  }
+
+  const metodos = consultar('SELECT COUNT(*) AS count FROM metodos_pago');
+  if (metodos[0].count === 0) {
+    var defaults = ['Efectivo', 'D\u00e9bito', 'Pago M\u00f3vil', 'Bancolombia'];
+    for (var i = 0; i < defaults.length; i++) {
+      ejecutar('INSERT INTO metodos_pago (nombre) VALUES (?)', [defaults[i]]);
+    }
+  }
 }
 
 module.exports = { sembrar };

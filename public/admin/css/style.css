@@ -61,6 +61,20 @@ tr:hover td{background:#1e293b}
 .campo input:focus,.campo select:focus{border-color:#06b6d4;outline:none}
 .modal-btns{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
 
+/* Separador */
+.sep{border:none;border-top:1px solid #1e293b;margin:1.5rem 0}
+
+/* Métodos de pago */
+.metodos-pago h2{color:#06b6d4;font-size:1rem;margin-bottom:.75rem}
+.metodos-row{display:flex;gap:.5rem;margin-bottom:.75rem}
+.inp-met{flex:1;background:#1e293b;color:#fff;border:1px solid #334155;border-radius:.375rem;padding:.5rem .75rem;font-size:.875rem}
+.inp-met:focus{border-color:#06b6d4;outline:none}
+#listaMetodos{list-style:none;display:flex;flex-wrap:wrap;gap:.4rem}
+#listaMetodos li{display:inline-flex;align-items:center;gap:.4rem;background:#1e293b;padding:.3rem .6rem .3rem .85rem;border-radius:2rem;font-size:.8125rem}
+#listaMetodos .btn-del-met{background:none;border:none;color:#ef4444;cursor:pointer;font-size:.85rem;padding:0 .15rem;line-height:1}
+#listaMetodos .btn-del-met:hover{color:#f87171}
+#listaMetodos .btn-edit-met{background:none;border:none;color:#06b6d4;cursor:pointer;font-size:.75rem;padding:0 .15rem;line-height:1}
+
 /* Toast */
 .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:#22c55e;color:#0f172a;padding:.5rem 1.5rem;border-radius:.375rem;font-size:.875rem;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:20}
 .toast.mostrar{opacity:1}

@@ -246,6 +246,70 @@
     });
   });
 
+  // ─── M&eacute;todos de Pago ────────────────────────────────────
+
+  function cargarMetodos() {
+    api('/api/metodos-pago').then(function (data) {
+      var ul = $('listaMetodos');
+      ul.innerHTML = '';
+      data.forEach(function (m) {
+        var li = document.createElement('li');
+        li.innerHTML = esc(m.nombre) +
+          ' <button class="btn-edit-met" data-id="' + m.id + '" data-nombre="' + esc(m.nombre) + '">✎</button>' +
+          ' <button class="btn-del-met" data-id="' + m.id + '">✖</button>';
+        ul.appendChild(li);
+      });
+    });
+  }
+
+  $('btnAgregarMetodo').addEventListener('click', function () {
+    var inp = $('inputNuevoMetodo');
+    var nombre = inp.value.trim();
+    if (!nombre) { mostrarToast('Escribe un nombre', true); return; }
+    api('/api/metodos-pago', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: nombre })
+    }).then(function () {
+      inp.value = '';
+      cargarMetodos();
+      mostrarToast('M\u00e9todo agregado');
+    }).catch(function (err) { mostrarToast(err.message, true); });
+  });
+
+  $('inputNuevoMetodo').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('btnAgregarMetodo').click();
+  });
+
+  $('listaMetodos').addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-del-met');
+    if (btn) {
+      var id = parseInt(btn.dataset.id);
+      if (!confirm('Eliminar este m\u00e9todo de pago?')) return;
+      api('/api/metodos-pago/' + id, { method: 'DELETE' }).then(function () {
+        cargarMetodos();
+        mostrarToast('Eliminado');
+      }).catch(function (err) { mostrarToast(err.message, true); });
+      return;
+    }
+    btn = e.target.closest('.btn-edit-met');
+    if (btn) {
+      var id = parseInt(btn.dataset.id);
+      var nombreActual = btn.dataset.nombre;
+      var nuevo = prompt('Editar nombre:', nombreActual);
+      if (nuevo && nuevo.trim() && nuevo.trim() !== nombreActual) {
+        api('/api/metodos-pago/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre: nuevo.trim() })
+        }).then(function () {
+          cargarMetodos();
+          mostrarToast('Actualizado');
+        }).catch(function (err) { mostrarToast(err.message, true); });
+      }
+    }
+  });
+
   // ─── Toast ───────────────────────────────────────────────
 
   function mostrarToast(msg, error) {
@@ -258,4 +322,5 @@
   // ─── Arranque ────────────────────────────────────────────
 
   init();
+  cargarMetodos();
 })();

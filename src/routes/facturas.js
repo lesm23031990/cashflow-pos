@@ -30,13 +30,23 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { cliente_id, moneda, descuento, metodo_pago, detalles } = req.body;
-  if (!cliente_id || !detalles || detalles.length === 0) {
-    return res.status(400).json({ error: 'Faltan datos: cliente_id, detalles' });
+  const { cliente_id, moneda, descuento, metodo_pago, detalles, cliente_nombre, cliente_telefono } = req.body;
+  if (!detalles || detalles.length === 0) {
+    return res.status(400).json({ error: 'Faltan datos: detalles' });
   }
 
-  const cliente = primero('SELECT id FROM clientes WHERE id = ?', [cliente_id]);
-  if (!cliente) return res.status(400).json({ error: 'Cliente no existe' });
+  // Cliente: si se envía nombre, crear cliente nuevo; si no, usar Mostrador
+  var cid = cliente_id;
+  if (cliente_nombre) {
+    ejecutar(
+      'INSERT INTO clientes (nombre, telefono) VALUES (?, ?)',
+      [cliente_nombre, cliente_telefono || '']
+    );
+    cid = primero('SELECT MAX(id) AS id FROM clientes').id;
+  } else if (!cid) {
+    const def = primero("SELECT id FROM clientes WHERE nombre = 'Mostrador'");
+    cid = def ? def.id : 1;
+  }
 
   const tasas = primero('SELECT usd, ves FROM tasas WHERE id = 1');
   const m = moneda || 'COP';

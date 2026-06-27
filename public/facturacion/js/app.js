@@ -5,6 +5,7 @@
   var detalles = [];
   var productosCache = [];
   var clientesCache = [];
+  var metodosCache = [];
   var selectedIdx = -1;
   var suggestIdx = -1;
   var facturaEditandoId = null;
@@ -260,6 +261,28 @@
   $('selMoneda').addEventListener('change', actualizarTotal);
   $('inputDescuento').addEventListener('input', actualizarTotal);
 
+  function cargarMetodosPago() {
+    api('/api/metodos-pago').then(function (data) {
+      metodosCache = data;
+      var sel = $('selMetodoPago');
+      sel.innerHTML = '<option value="">Seleccionar...</option>';
+      data.forEach(function (m) {
+        var opt = document.createElement('option');
+        opt.value = m.nombre;
+        opt.textContent = m.nombre;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  // Mostrar nombre/telefono solo si Pago Móvil o Bancolombia
+  $('selMetodoPago').addEventListener('change', function () {
+    var v = this.value;
+    var show = v === 'Pago M\u00f3vil' || v === 'Bancolombia';
+    $('datosCliente').style.display = show ? '' : 'none';
+    $('datosTelefono').style.display = show ? '' : 'none';
+  });
+
   $('buscarProd').addEventListener('keydown', function (e) {
     var suggest = $('resultadosBusqueda');
     var items = suggest.querySelectorAll('.suggest-item');
@@ -289,24 +312,36 @@
   });
 
   window.generarFactura = function () {
-    var clienteId = parseInt($('selCliente').value);
-    if (!clienteId) { mostrarToast('Selecciona un cliente', true); $('selCliente').focus(); return; }
     if (detalles.length === 0) { mostrarToast('Agrega al menos un producto', true); $('buscarProd').focus(); return; }
+
+    var metodo = $('selMetodoPago').value;
+    if (!metodo) { mostrarToast('Selecciona un m\u00e9todo de pago', true); $('selMetodoPago').focus(); return; }
+
+    var nombre = $('inputNombreCliente').value.trim();
+    var telefono = $('inputTelefonoCliente').value.trim();
+
+    if (metodo === 'Pago M\u00f3vil' || metodo === 'Bancolombia') {
+      if (!nombre) { mostrarToast('Nombre del cliente obligatorio', true); $('inputNombreCliente').focus(); return; }
+      if (!telefono) { mostrarToast('Tel\u00e9fono del cliente obligatorio', true); $('inputTelefonoCliente').focus(); return; }
+    }
 
     var btn = $('btnGenerar');
     btn.disabled = true;
     btn.innerHTML = 'Generando...';
 
+    var body = {
+      moneda: $('selMoneda').value,
+      descuento: parseFloat($('inputDescuento').value) || 0,
+      metodo_pago: metodo,
+      detalles: detalles.map(function (d) { return { producto_id: d.producto_id, cantidad: d.cantidad, precio_unitario: d.precio_unitario }; })
+    };
+
+    if (nombre) { body.cliente_nombre = nombre; body.cliente_telefono = telefono; }
+
     api('/api/facturas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cliente_id: clienteId,
-        moneda: $('selMoneda').value,
-        descuento: parseFloat($('inputDescuento').value) || 0,
-        metodo_pago: $('selMetodoPago').value,
-        detalles: detalles.map(function (d) { return { producto_id: d.producto_id, cantidad: d.cantidad, precio_unitario: d.precio_unitario }; })
-      })
+      body: JSON.stringify(body)
     }).then(function (factura) {
       mostrarToast('Factura #' + factura.id + ' generada');
       detalles = [];
@@ -390,7 +425,8 @@
     var editTools = $('facturaEditTools');
     if (f.status === 'en espera') {
       poblarSelect($('editStatus'), ['en espera', 'pagada'], f.status);
-      poblarSelect($('editMetodoPago'), ['', 'Efectivo', 'D\u00e9bito', 'Pago M\u00f3vil', 'Bancolombia'], f.metodo_pago || '');
+      var opts = [''].concat(metodosCache.map(function (m) { return m.nombre; }));
+      poblarSelect($('editMetodoPago'), opts, f.metodo_pago || '');
       editTools.style.display = 'block';
     } else {
       editTools.style.display = 'none';
@@ -506,6 +542,7 @@
 
   cargarClientes();
   cargarProductos();
+  cargarMetodosPago();
   cargarFacturas();
   renderDetalle();
 
