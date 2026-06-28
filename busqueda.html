@@ -24,12 +24,12 @@
             text-transform: uppercase; letter-spacing: 0.05em;
             padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #334155;
         }
-        th:last-child { text-align: right; }
+        th:nth-child(n+3) { text-align: right; }
         td {
             padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e293b;
             vertical-align: middle;
         }
-        td:last-child {
+        td:nth-child(n+3) {
             text-align: right; font-weight: 700; color: #34d399;
             font-family: monospace; font-size: 1.125rem;
         }
@@ -47,7 +47,7 @@
         <main>
             <table>
                 <thead>
-                    <tr><th>Producto</th><th>Marca</th><th>Precio</th></tr>
+                    <tr><th>Producto</th><th>Marca</th><th>COP</th><th>USD</th><th>VES</th></tr>
                 </thead>
                 <tbody id="resultsBody"></tbody>
             </table>
@@ -199,9 +199,14 @@
         var searchBar = document.getElementById('searchBar');
         var resultsBody = document.getElementById('resultsBody');
 
+        var tasaUsd = 3500;
+        var tasaVes = 4.7;
+
+        fetch('/api/tasas').then(function(r) { return r.json(); }).then(function(t) { tasaUsd = t.usd; tasaVes = t.ves; }).catch(function() {});
+
         function renderResults(lista) {
             if (!lista || lista.length === 0) {
-                resultsBody.innerHTML = '<tr><td colspan="3" class="vacio">No encontrado</td></tr>';
+                resultsBody.innerHTML = '<tr><td colspan="5" class="vacio">No encontrado</td></tr>';
                 return;
             }
             resultsBody.innerHTML = '';
@@ -209,9 +214,14 @@
                 var item = lista[i];
                 var tr = document.createElement('tr');
                 var marca = item.m || '';
+                var cop = item.v;
+                var usd = cop / tasaUsd;
+                var ves = cop / tasaVes;
                 tr.innerHTML = '<td>' + item.p + '</td>'
                     + '<td><span class="marca">' + marca + '</span></td>'
-                    + '<td>$' + Number(item.v).toLocaleString('es-CO') + '</td>';
+                    + '<td>$' + Number(cop).toLocaleString('es-CO') + '</td>'
+                    + '<td>$' + Number(usd).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>'
+                    + '<td>Bs ' + Number(ves).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
                 resultsBody.appendChild(tr);
             }
         }

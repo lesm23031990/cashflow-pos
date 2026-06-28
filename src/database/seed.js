@@ -134,15 +134,27 @@ async function sembrar() {
     );
   }
 
-  const configCount = consultar('SELECT COUNT(*) AS count FROM configuracion');
-  if (configCount[0].count === 0) {
-    ejecutar("INSERT INTO configuracion (clave, valor) VALUES ('tasa_usd', '3500')");
-    ejecutar("INSERT INTO configuracion (clave, valor) VALUES ('tasa_ves', '4.7')");
+  const tasaExiste = consultar('SELECT COUNT(*) AS count FROM tasas WHERE id = 1');
+  if (tasaExiste[0].count === 0) {
+    ejecutar('INSERT INTO tasas (id, usd, ves) VALUES (1, 3500, 4.70)');
   }
 
   const adminExiste = consultar("SELECT COUNT(*) AS count FROM usuarios WHERE username = 'admin'");
   if (adminExiste[0].count === 0) {
     ejecutar("INSERT INTO usuarios (username, password_hash, rol) VALUES ('admin', ?, 'admin')", [hashPassword('admin123')]);
+  }
+
+  const mostrador = consultar("SELECT id FROM clientes WHERE nombre = 'Mostrador'");
+  if (mostrador.length === 0) {
+    ejecutar("INSERT INTO clientes (nombre, documento, telefono, direccion) VALUES ('Mostrador', '', '', '')");
+  }
+
+  const metodos = consultar('SELECT COUNT(*) AS count FROM metodos_pago');
+  if (metodos[0].count === 0) {
+    var defaults = ['Efectivo', 'Débito', 'Pago Móvil', 'Bancolombia'];
+    for (var i = 0; i < defaults.length; i++) {
+      ejecutar('INSERT INTO metodos_pago (nombre) VALUES (?)', [defaults[i]]);
+    }
   }
 }
 

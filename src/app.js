@@ -6,6 +6,9 @@ const { verificarToken } = require('./middleware/auth');
 const productosRouter = require('./routes/productos');
 const tasasRouter = require('./routes/tasas');
 const authRouter = require('./routes/auth');
+const clientesRouter = require('./routes/clientes');
+const facturasRouter = require('./routes/facturas');
+const metodosPagoRouter = require('./routes/metodos_pago');
 
 const app = express();
 
@@ -20,6 +23,9 @@ app.use('/api/auth', authRouter);
 // API routes protegidas
 app.use('/api/productos', verificarToken, productosRouter);
 app.use('/api/tasas', verificarToken, tasasRouter);
+app.use('/api/clientes', verificarToken, clientesRouter);
+app.use('/api/facturas', verificarToken, facturasRouter);
+app.use('/api/metodos-pago', verificarToken, metodosPagoRouter);
 
 // SPA - Admin (React build en public/admin/)
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));

@@ -1,4 +1,4 @@
-import type { Producto, Tasas } from './types'
+import type { Producto, Tasas, Cliente, Factura, MetodoPago } from './types'
 
 const BASE = '/api'
 
@@ -97,4 +97,70 @@ export function actualizarTasas(usd: number, ves: number): Promise<Tasas> {
     method: 'PUT',
     body: JSON.stringify({ usd, ves }),
   })
+}
+
+// Clientes
+export function getClientes(): Promise<Cliente[]> {
+  return request('/clientes')
+}
+
+export function crearCliente(data: Partial<Cliente>): Promise<Cliente> {
+  return request('/clientes', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+// Facturas
+export function getFacturas(): Promise<Factura[]> {
+  return request('/facturas')
+}
+
+export function getFactura(id: number): Promise<Factura> {
+  return request('/facturas/' + id)
+}
+
+export function crearFactura(data: {
+  cliente_id?: number
+  cliente_nombre?: string
+  cliente_telefono?: string
+  moneda: string
+  descuento: number
+  metodo_pago: string
+  detalles: { producto_id: number; cantidad: number; precio_unitario?: number }[]
+}): Promise<Factura> {
+  return request('/facturas', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function actualizarFactura(id: number, data: { status?: string; metodo_pago?: string }): Promise<Factura> {
+  return request('/facturas/' + id, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+// Métodos de pago
+export function getMetodosPago(): Promise<MetodoPago[]> {
+  return request('/metodos-pago')
+}
+
+export function crearMetodoPago(nombre: string): Promise<MetodoPago> {
+  return request('/metodos-pago', {
+    method: 'POST',
+    body: JSON.stringify({ nombre }),
+  })
+}
+
+export function actualizarMetodoPago(id: number, nombre: string): Promise<MetodoPago> {
+  return request('/metodos-pago/' + id, {
+    method: 'PUT',
+    body: JSON.stringify({ nombre }),
+  })
+}
+
+export function eliminarMetodoPago(id: number): Promise<void> {
+  return request('/metodos-pago/' + id, { method: 'DELETE' })
 }
