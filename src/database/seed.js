@@ -1,4 +1,4 @@
-const { conectar, guardar, consultar, ejecutar } = require('./connection');
+const { conectar, guardar, consultar, ejecutar, hashPassword } = require('./connection');
 
 const PRODUCTOS = [
   ["Lata Grande", 3500, "Gen\u00e9rico", "Cervezas y Bebidas"],
@@ -139,6 +139,11 @@ async function sembrar() {
     ejecutar('INSERT INTO tasas (id, usd, ves) VALUES (1, 3500, 4.70)');
   }
 
+  const adminExiste = consultar("SELECT COUNT(*) AS count FROM usuarios WHERE username = 'admin'");
+  if (adminExiste[0].count === 0) {
+    ejecutar("INSERT INTO usuarios (username, password_hash, rol) VALUES ('admin', ?, 'admin')", [hashPassword('admin123')]);
+  }
+
   const mostrador = consultar("SELECT id FROM clientes WHERE nombre = 'Mostrador'");
   if (mostrador.length === 0) {
     ejecutar("INSERT INTO clientes (nombre, documento, telefono, direccion) VALUES ('Mostrador', '', '', '')");
@@ -146,7 +151,7 @@ async function sembrar() {
 
   const metodos = consultar('SELECT COUNT(*) AS count FROM metodos_pago');
   if (metodos[0].count === 0) {
-    var defaults = ['Efectivo', 'D\u00e9bito', 'Pago M\u00f3vil', 'Bancolombia'];
+    var defaults = ['Efectivo', 'Débito', 'Pago Móvil', 'Bancolombia'];
     for (var i = 0; i < defaults.length; i++) {
       ejecutar('INSERT INTO metodos_pago (nombre) VALUES (?)', [defaults[i]]);
     }

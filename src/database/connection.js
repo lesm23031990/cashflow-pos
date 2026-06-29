@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'precios.db');
 
@@ -31,6 +32,7 @@ async function conectar() {
     CREATE TABLE IF NOT EXISTS productos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre TEXT NOT NULL,
+      codigo_barras TEXT DEFAULT '',
       precio_cop REAL NOT NULL,
       marca TEXT DEFAULT '',
       categoria TEXT DEFAULT ''
@@ -40,8 +42,17 @@ async function conectar() {
   db.run(`
     CREATE TABLE IF NOT EXISTS tasas (
       id INTEGER PRIMARY KEY CHECK (id = 1),
-      usd REAL NOT NULL DEFAULT 0.00024,
-      ves REAL NOT NULL DEFAULT 4.50
+      usd REAL NOT NULL DEFAULT 3500,
+      ves REAL NOT NULL DEFAULT 4.70
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      rol TEXT NOT NULL DEFAULT 'admin'
     )
   `);
 
@@ -61,8 +72,8 @@ async function conectar() {
       cliente_id INTEGER NOT NULL,
       fecha TEXT NOT NULL,
       moneda TEXT NOT NULL DEFAULT 'COP',
-      tasa_usd REAL NOT NULL DEFAULT 0.00024,
-      tasa_ves REAL NOT NULL DEFAULT 4.50,
+      tasa_usd REAL NOT NULL DEFAULT 3500,
+      tasa_ves REAL NOT NULL DEFAULT 4.70,
       subtotal REAL NOT NULL DEFAULT 0,
       descuento REAL NOT NULL DEFAULT 0,
       total REAL NOT NULL DEFAULT 0,
@@ -93,7 +104,7 @@ async function conectar() {
     )
   `);
 
-  // Migraciones post-creaci&oacute;n (para bases existentes)
+  // Migraciones post-creación (para bases existentes)
   try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
   try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
 
@@ -131,4 +142,8 @@ function primero(sql, params) {
   return rows.length > 0 ? rows[0] : null;
 }
 
-module.exports = { conectar, guardar, ejecutar, consultar, primero };
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+module.exports = { conectar, guardar, ejecutar, consultar, primero, hashPassword };

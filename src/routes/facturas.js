@@ -35,7 +35,6 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Faltan datos: detalles' });
   }
 
-  // Cliente: si se envía nombre, crear cliente nuevo; si no, usar Mostrador
   var cid = cliente_id;
   if (cliente_nombre) {
     ejecutar(
@@ -98,13 +97,11 @@ router.put('/:id', (req, res) => {
 
   const { status, metodo_pago, detalles } = req.body;
 
-  // Actualizar campos simples
   const campos = [];
   const valores = [];
   if (status !== undefined) { campos.push('status = ?'); valores.push(status); }
   if (metodo_pago !== undefined) { campos.push('metodo_pago = ?'); valores.push(metodo_pago); }
 
-  // Si se enviaron detalles, recalcular todo
   if (detalles && Array.isArray(detalles) && detalles.length > 0) {
     const tasas = primero('SELECT usd, ves FROM tasas WHERE id = 1');
     const factura = primero('SELECT * FROM facturas WHERE id = ?', [id]);
@@ -123,7 +120,6 @@ router.put('/:id', (req, res) => {
     campos.push('subtotal = ?'); valores.push(subtotal);
     campos.push('total = ?'); valores.push(total);
 
-    // Reemplazar detalles
     ejecutar('DELETE FROM factura_detalles WHERE factura_id = ?', [id]);
     for (const d of detalles) {
       const prod = primero('SELECT id, nombre, precio_cop FROM productos WHERE id = ?', [d.producto_id]);
