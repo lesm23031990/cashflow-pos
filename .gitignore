@@ -1,3 +1,4 @@
 node_modules/
 data/precios.db
+data/precios.db-journal
 .env
