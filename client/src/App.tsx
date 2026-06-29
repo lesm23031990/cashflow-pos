@@ -22,18 +22,61 @@ function Topbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const path = location.pathname.replace('/admin', '') || '/'
+  const [tasas, setTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
+  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
+  const [modalTasas, setModalTasas] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
+
+  useEffect(() => {
+    getTasas().then(t => { setTasas(t); setEditTasas(t) }).catch(() => {})
+  }, [])
+
+  function guardarTasas() {
+    actualizarTasas(editTasas.usd, editTasas.ves)
+      .then(t => { setTasas(t); setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
+      .catch(() => setToast({ msg: 'Error al guardar tasas', err: true }))
+  }
 
   return (
-    <div className="topbar">
-      <div className="topbar-left">
-        <h1 className="topbar-title">Barebare</h1>
+    <>
+      <div className="topbar">
+        <div className="topbar-left">
+          <h1 className="topbar-title">Barebare</h1>
+          <span className="tasas-badge" onClick={() => setModalTasas(true)} title="Editar tasas de cambio">
+            <span className="tasa-chip">USD <span>{Number(tasas.usd).toLocaleString('es-CO')}</span></span>
+            <span className="tasa-chip">VES <span>{Number(tasas.ves).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span></span>
+            <span style={{ color: '#64748b', fontSize: '.75rem', marginLeft: '.15rem' }}>✎</span>
+          </span>
+        </div>
+        <nav className="topbar-nav">
+          <Link to="/admin" className={path === '/' || path === '' ? 'active' : ''}>Admin</Link>
+          <Link to="/admin/facturacion" className={path.includes('facturacion') ? 'active' : ''}>Facturación</Link>
+          <Link to="/admin/dashboard" className={path.includes('dashboard') ? 'active' : ''}>Dashboard</Link>
+        </nav>
       </div>
-      <nav className="topbar-nav">
-        <Link to="/admin" className={path === '/' || path === '' ? 'active' : ''}>Admin</Link>
-        <Link to="/admin/facturacion" className={path.includes('facturacion') ? 'active' : ''}>Facturación</Link>
-        <Link to="/admin/dashboard" className={path.includes('dashboard') ? 'active' : ''}>Dashboard</Link>
-      </nav>
-    </div>
+
+      {modalTasas && (
+        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) setModalTasas(false) }}>
+          <div className="modal modal-sm">
+            <h2>Editar Tasas de Cambio</h2>
+            <div className="campo">
+              <label>1 USD = ? COP</label>
+              <input type="number" value={editTasas.usd} onChange={e => setEditTasas(p => ({ ...p, usd: +e.target.value }))} step={1} min={0} />
+            </div>
+            <div className="campo">
+              <label>1 VES = ? COP</label>
+              <input type="number" value={editTasas.ves} onChange={e => setEditTasas(p => ({ ...p, ves: +e.target.value }))} step="any" min={0} />
+            </div>
+            <div className="modal-btns">
+              <button className="btn btn-cancel" onClick={() => setModalTasas(false)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={guardarTasas}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.msg} error={toast.err} onClose={() => setToast(null)} />}
+    </>
   )
 }
 

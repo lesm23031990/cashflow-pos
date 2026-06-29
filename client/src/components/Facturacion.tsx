@@ -44,10 +44,14 @@ export default function Facturacion() {
   const [editTasas, setEditTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
   const [consultarOpen, setConsultarOpen] = useState(false)
   const [consSearch, setConsSearch] = useState('')
+  const [helpOpen, setHelpOpen] = useState(false)
   const [generando, setGenerando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
 
   const searchRef = useRef<HTMLInputElement>(null)
+  const clienteRef = useRef<HTMLSelectElement>(null)
+  const monedaRef = useRef<HTMLSelectElement>(null)
+  const descuentoRef = useRef<HTMLInputElement>(null)
   const consSearchRef = useRef<HTMLInputElement>(null)
 
   function cargarDatos() {
@@ -171,10 +175,11 @@ export default function Facturacion() {
       if (consultarOpen) return
 
       switch (e.key) {
-        case 'F2': e.preventDefault(); break
+        case 'F1': e.preventDefault(); setHelpOpen(true); break
+        case 'F2': e.preventDefault(); clienteRef.current?.focus(); break
         case 'F3': e.preventDefault(); searchRef.current?.focus(); searchRef.current?.select(); break
-        case 'F4': e.preventDefault(); break
-        case 'F5': e.preventDefault(); break
+        case 'F4': e.preventDefault(); monedaRef.current?.focus(); break
+        case 'F5': e.preventDefault(); descuentoRef.current?.focus(); descuentoRef.current?.select(); break
         case 'F6': e.preventDefault(); nuevaFactura(); break
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generarFactura() }
@@ -182,7 +187,7 @@ export default function Facturacion() {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [detalles, moneda, descuento, metodoPago, clienteId, nuevoClienteNombre, nuevoClienteTel, consultarOpen])
+  }, [detalles, moneda, descuento, metodoPago, clienteId, nuevoClienteNombre, nuevoClienteTel, consultarOpen, helpOpen])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 56px)' }}>
@@ -192,7 +197,7 @@ export default function Facturacion() {
           <div className="card-head"><h2>Cliente</h2></div>
           <div className="card-body">
             <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-              <select className="sel" value={clienteId} onChange={e => setClienteId(e.target.value)} style={{ flex: 1 }}>
+              <select ref={clienteRef} className="sel" value={clienteId} onChange={e => setClienteId(e.target.value)} style={{ flex: 1 }}>
                 <option value="">Seleccionar cliente...</option>
                 {clientesList.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.documento ? ' (' + c.documento + ')' : ''}</option>)}
               </select>
@@ -237,6 +242,7 @@ export default function Facturacion() {
                 <button className="btn btn-icon" onClick={() => setCantidad(c => c + 1)} style={{ width: '2.2rem', height: '2.2rem', background: '#0b1120', color: '#94a3b8', border: '1px solid #1e293b', borderRadius: '.4rem', cursor: 'pointer' }}>+</button>
               </div>
               <button className="btn btn-primary" onClick={() => agregarProducto()}>Agregar</button>
+              <button className="btn btn-outline" onClick={() => setConsultarOpen(true)}>Consultar</button>
             </div>
 
             <div className="table-wrap">
@@ -268,7 +274,7 @@ export default function Facturacion() {
             <div className="factura-resumen">
               <div className="factura-field">
                 <label>Moneda</label>
-                <select className="sel" value={moneda} onChange={e => setMoneda(e.target.value)}>
+                <select ref={monedaRef} className="sel" value={moneda} onChange={e => setMoneda(e.target.value)}>
                   <option value="COP">COP $</option>
                   <option value="USD">USD $</option>
                   <option value="VES">VES Bs</option>
@@ -276,7 +282,7 @@ export default function Facturacion() {
               </div>
               <div className="factura-field">
                 <label>Descuento</label>
-                <input type="number" value={descuento} onChange={e => setDescuento(+e.target.value || 0)} min={0} step={100} />
+                <input ref={descuentoRef} type="number" value={descuento} onChange={e => setDescuento(+e.target.value || 0)} min={0} step={100} />
               </div>
               <div className="factura-field">
                 <label>Método de Pago</label>
@@ -341,6 +347,7 @@ export default function Facturacion() {
       </div>
 
       <div className="shortcuts-bar">
+        <span><kbd>F1</kbd> Ayuda</span>
         <span><kbd>F3</kbd> Buscar</span>
         <span><kbd>Ctrl+N</kbd> Nueva</span>
         <span><kbd>Ctrl+Enter</kbd> Generar</span>
@@ -433,6 +440,83 @@ export default function Facturacion() {
             <div className="modal-btns">
               <button className="btn btn-cancel" onClick={() => setModalFactura(null)}>Cerrar</button>
               <button className="btn btn-primary" onClick={() => window.print()}>Imprimir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Consultar productos modal */}
+      {consultarOpen && (
+        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) { setConsultarOpen(false); setConsSearch('') } }}>
+          <div className="modal" style={{ maxWidth: '44rem', padding: '.75rem .875rem .875rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.5rem' }}>
+              <h2 style={{ color: '#06b6d4', fontSize: '1rem', margin: 0 }}>Consultar Productos</h2>
+              <button onClick={() => { setConsultarOpen(false); setConsSearch('') }} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '1.1rem', cursor: 'pointer', padding: '.2rem' }}>✖</button>
+            </div>
+            <input type="text" className="inp" placeholder="Escribe para buscar..." value={consSearch} onChange={e => setConsSearch(e.target.value)}
+              autoFocus style={{ marginBottom: '.5rem' }} />
+            <div style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+              <table>
+                <thead>
+                  <tr><th>Producto</th><th>Marca</th><th className="col-price">COP</th><th className="col-price">USD</th><th className="col-price">VES</th></tr>
+                </thead>
+                <tbody>
+                  {consFiltrados.length === 0 ? (
+                    <tr><td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '1rem' }}>Sin resultados</td></tr>
+                  ) : consFiltrados.map(p => (
+                    <tr key={p.id} style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        setSelectedProd(p)
+                        setSearch(p.p)
+                        setConsultarOpen(false)
+                        setConsSearch('')
+                        searchRef.current?.focus()
+                      }}>
+                      <td>{p.p}</td>
+                      <td style={{ color: '#64748b', fontSize: '.8125rem' }}>{p.m || ''}</td>
+                      <td className="col-price" style={{ color: '#fbbf24' }}>${fmt(p.v)}</td>
+                      <td className="col-price" style={{ color: '#34d399' }}>${(tasas.usd > 0 ? p.v / tasas.usd : 0).toFixed(2)}</td>
+                      <td className="col-price" style={{ color: '#f472b6' }}>Bs {fmt(tasas.ves > 0 ? p.v / tasas.ves : 0, 2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ayuda modal */}
+      {helpOpen && (
+        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) setHelpOpen(false) }}>
+          <div className="modal" style={{ maxWidth: '26rem' }}>
+            <h2>Atajos de Teclado</h2>
+            <table style={{ width: '100%', fontSize: '.8125rem', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  ['F1', 'Mostrar esta ayuda'],
+                  ['F2', 'Enfocar cliente'],
+                  ['F3', 'Enfocar búsqueda de productos'],
+                  ['F4', 'Enfocar selector de moneda'],
+                  ['F5', 'Enfocar descuento'],
+                  ['F6', 'Nueva factura (limpiar)'],
+                  ['↑ ↓', 'Navegar sugerencias'],
+                  ['Enter', 'Agregar producto seleccionado'],
+                  ['Ctrl+Enter', 'Generar factura'],
+                  ['Ctrl+N', 'Nueva factura'],
+                  ['Esc', 'Cerrar modal / limpiar búsqueda'],
+                ].map(([key, desc]) => (
+                  <tr key={key}>
+                    <td style={{ padding: '.3rem .5rem', borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap', width: '7rem' }}>
+                      <kbd style={{ background: '#1e293b', color: '#94a3b8', padding: '.1rem .4rem', borderRadius: '.2rem', border: '1px solid #334155', fontSize: '.6875rem', fontFamily: 'inherit' }}>{key}</kbd>
+                    </td>
+                    <td style={{ padding: '.3rem .5rem', borderBottom: '1px solid #1e293b', color: '#94a3b8' }}>{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="modal-btns">
+              <button className="btn btn-primary" onClick={() => setHelpOpen(false)}>Cerrar</button>
             </div>
           </div>
         </div>

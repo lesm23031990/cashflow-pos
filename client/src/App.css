@@ -102,6 +102,7 @@ tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
   background: #1e293b; border-radius: 12px; padding: 24px; width: 90%; max-width: 420px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
+.modal-sm { max-width: 26rem; }
 .modal h2 { margin-bottom: 1rem; color: #f1f5f9; }
 .campo { margin-bottom: 1rem; }
 .campo label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
