@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom'
 import type { Producto, Tasas, MetodoPago } from './types'
 import {
   getProductos, getProductoByBarcode, crearProducto,
   actualizarProducto, eliminarProducto, exportarProductos,
-  verificarToken, getTasas, actualizarTasas,
+  verificarToken,
   getMetodosPago, crearMetodoPago, actualizarMetodoPago, eliminarMetodoPago,
 } from './api'
-import TasasForm from './components/TasasForm'
+import { TasasProvider, useTasas } from './TasasContext'
 import ProductTable from './components/ProductTable'
 import ProductModal from './components/ProductModal'
 import ProductDetailModal from './components/ProductDetailModal'
@@ -22,18 +22,18 @@ function Topbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const path = location.pathname.replace('/admin', '') || '/'
-  const [tasas, setTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
-  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
+  const { tasas, guardarTasas: contextGuardarTasas } = useTasas()
+  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 0, ves: 0 })
   const [modalTasas, setModalTasas] = useState(false)
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
 
   useEffect(() => {
-    getTasas().then(t => { setTasas(t); setEditTasas(t) }).catch(() => {})
-  }, [])
+    if (tasas) setEditTasas(tasas)
+  }, [tasas])
 
   function guardarTasas() {
-    actualizarTasas(editTasas.usd, editTasas.ves)
-      .then(t => { setTasas(t); setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
+    contextGuardarTasas(editTasas.usd, editTasas.ves)
+      .then(() => { setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
       .catch(() => setToast({ msg: 'Error al guardar tasas', err: true }))
   }
 
@@ -42,11 +42,15 @@ function Topbar() {
       <div className="topbar">
         <div className="topbar-left">
           <h1 className="topbar-title">Barebare</h1>
-          <span className="tasas-badge" onClick={() => setModalTasas(true)} title="Editar tasas de cambio">
-            <span className="tasa-chip">USD <span>{Number(tasas.usd).toLocaleString('es-CO')}</span></span>
-            <span className="tasa-chip">VES <span>{Number(tasas.ves).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span></span>
-            <span style={{ color: '#64748b', fontSize: '.75rem', marginLeft: '.15rem' }}>✎</span>
-          </span>
+          {tasas ? (
+            <span className="tasas-badge" onClick={() => setModalTasas(true)} title="Editar tasas de cambio">
+              <span className="tasa-chip">USD <span>{Number(tasas.usd).toLocaleString('es-CO')}</span></span>
+              <span className="tasa-chip">VES <span>{Number(tasas.ves).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span></span>
+              <span style={{ color: '#64748b', fontSize: '.75rem', marginLeft: '.15rem' }}>✎</span>
+            </span>
+          ) : (
+            <span className="tasas-badge" style={{ opacity: 0.5 }}>Cargando tasas...</span>
+          )}
         </div>
         <nav className="topbar-nav">
           <Link to="/admin" className={path === '/' || path === '' ? 'active' : ''}>Admin</Link>
@@ -82,9 +86,8 @@ function Topbar() {
 
 function AdminPage() {
   const [productos, setProductos] = useState<Producto[]>([])
-  const [tasas, setTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
-  const [filtro, setFiltro] = useState('')
-  const [barcodeInput, setBarcodeInput] = useState('')
+  const { tasas } = useTasas()
+  const [searchInput, setSearchInput] = useState('')
   const [editando, setEditando] = useState<Partial<Producto> | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [productoDetalle, setProductoDetalle] = useState<Producto | null>(null)
@@ -92,35 +95,70 @@ function AdminPage() {
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([])
   const [nuevoMetodo, setNuevoMetodo] = useState('')
 
+  const lastChangeTime = useRef(0)
+  const isScanning = useRef(false)
+  const scanTimeout = useRef<ReturnType<typeof setTimeout>>()
+
   const showToast = useCallback((msg: string, err?: boolean) => {
     setToast({ msg, err })
   }, [])
 
   function cargar() {
     getProductos().then(setProductos).catch(() => showToast('Error al cargar productos', true))
-    getTasas().then(setTasas).catch(() => {})
     getMetodosPago().then(setMetodosPago).catch(() => {})
   }
 
   useEffect(() => { cargar() }, [])
 
-  const handleBarcodeScan = useCallback(async () => {
-    const codigo = barcodeInput.trim()
+  function buscarBarcode(codigo: string) {
     if (!codigo) return
-    try {
-      const existente = await getProductoByBarcode(codigo)
-      if (existente) {
-        setProductoDetalle(existente)
-        setBarcodeInput('')
-        return
+    getProductoByBarcode(codigo)
+      .then(existente => {
+        if (existente) {
+          setProductoDetalle(existente)
+        } else {
+          setEditando({ b: codigo, c: 'Otra' })
+          setModalOpen(true)
+        }
+      })
+      .catch(() => showToast('Error al buscar código', true))
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const now = Date.now()
+    const elapsed = now - lastChangeTime.current
+    lastChangeTime.current = now
+
+    if (scanTimeout.current) clearTimeout(scanTimeout.current)
+
+    if (elapsed < 50) {
+      if (!isScanning.current) {
+        isScanning.current = true
+        setSearchInput(e.target.value.slice(-1))
+      } else {
+        setSearchInput(e.target.value)
       }
-      setEditando({ b: codigo, c: 'Otra' })
-      setModalOpen(true)
-      setBarcodeInput('')
-    } catch {
-      showToast('Error al buscar código', true)
+    } else {
+      isScanning.current = false
+      setSearchInput(e.target.value)
     }
-  }, [barcodeInput, showToast])
+
+    scanTimeout.current = setTimeout(() => {
+      isScanning.current = false
+    }, 200)
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      const val = searchInput.trim()
+      if (!val) return
+      if (isScanning.current) {
+        isScanning.current = false
+        setSearchInput('')
+        buscarBarcode(val)
+      }
+    }
+  }
 
   function handleSave(data: Partial<Producto>) {
     const promise = editando?.id
@@ -163,9 +201,8 @@ function AdminPage() {
       .catch((err: Error) => showToast(err.message, true))
   }
 
-  function handleTasasChange(usd: number, ves: number) {
-    setTasas({ usd, ves })
-    actualizarTasas(usd, ves).catch(() => {})
+  function handleTasasChange(field: 'usd' | 'ves', value: number) {
+    setTasas(prev => prev ? { ...prev, [field]: value } : null)
   }
 
   function agregarMetodo() {
@@ -188,17 +225,15 @@ function AdminPage() {
 
   return (
     <div className="wrapper">
-      <TasasForm tasas={tasas} onChange={handleTasasChange} onToast={showToast} />
 
       <div className="toolbar">
-        <input type="text" placeholder="Buscar producto..." value={filtro} onChange={e => setFiltro(e.target.value)} />
-        <input type="text" className="scan-input" placeholder="📷 Escanea código de barras..." value={barcodeInput}
-          onChange={e => setBarcodeInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleBarcodeScan() }} />
+        <input type="text" className="scan-input" placeholder="Buscar producto o escanear código de barras..." value={searchInput}
+          onChange={handleSearchChange} onKeyDown={handleSearchKeyDown} />
         <button className="btn btn-primary" onClick={() => { setEditando(null); setModalOpen(true) }}>+ Nuevo</button>
         <button className="btn btn-danger" onClick={handleExport}>Exportar</button>
       </div>
 
-      <ProductTable productos={productos} tasas={tasas} filtro={filtro} onEdit={handleEdit} onDelete={handleDelete} />
+      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} />
 
       {modalOpen && (
         <ProductModal producto={editando} onSave={handleSave} onClose={() => { setModalOpen(false); setEditando(null) }} />
@@ -256,7 +291,7 @@ function AppContent() {
   }
 
   return (
-    <>
+    <TasasProvider>
       <Topbar />
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
@@ -264,7 +299,7 @@ function AppContent() {
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
-    </>
+    </TasasProvider>
   )
 }
 

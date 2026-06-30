@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Factura, Producto, Cliente, Tasas } from '../types'
-import { getFacturas, getProductos, getClientes, getTasas, actualizarTasas } from '../api'
+import { getFacturas, getProductos, getClientes } from '../api'
+import { useTasas } from '../TasasContext'
 import Toast from './Toast'
 
 function fmt(n: number, frac?: number) {
@@ -20,20 +21,22 @@ export default function Dashboard() {
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [clientesData, setClientesData] = useState<Cliente[]>([])
-  const [tasas, setTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
-  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
+  const { tasas, guardarTasas: contextGuardarTasas } = useTasas()
+  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 0, ves: 0 })
   const [modalTasas, setModalTasas] = useState(false)
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
 
+  useEffect(() => {
+    if (tasas) setEditTasas(tasas)
+  }, [tasas])
+
   function cargar() {
-    Promise.all([getFacturas(), getProductos(), getClientes(), getTasas()])
-      .then(([f, p, c, t]) => {
+    Promise.all([getFacturas(), getProductos(), getClientes()])
+      .then(([f, p, c]) => {
         setFacturas(f)
         setProductos(p)
         setClientesData(c)
-        setTasas(t)
-        setEditTasas(t)
-      })
+      }).catch(() => setToast({ msg: 'Error al cargar datos', err: true }))
   }
 
   useEffect(() => { cargar() }, [])
@@ -43,8 +46,8 @@ export default function Dashboard() {
   const ingresosTotal = facturas.reduce((s, f) => s + f.total, 0)
 
   function guardarTasas() {
-    actualizarTasas(editTasas.usd, editTasas.ves)
-      .then(t => { setTasas(t); setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
+    contextGuardarTasas(editTasas.usd, editTasas.ves)
+      .then(() => { setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
       .catch(() => setToast({ msg: 'Error al guardar tasas', err: true }))
   }
 
@@ -62,11 +65,15 @@ export default function Dashboard() {
       <div className="card">
         <div className="card-head"><h2>Tasas de Cambio</h2></div>
         <div className="card-body">
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            <span style={{ color: '#94a3b8' }}><strong style={{ color: '#34d399' }}>USD</strong> 1 USD = {fmt(tasas.usd)} COP</span>
-            <span style={{ color: '#94a3b8' }}><strong style={{ color: '#f472b6' }}>VES</strong> 1 VES = {fmt(tasas.ves, 1)} COP</span>
-            <button className="btn btn-outline btn-sm" onClick={() => setModalTasas(true)}>Editar</button>
-          </div>
+          {tasas ? (
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              <span style={{ color: '#94a3b8' }}><strong style={{ color: '#34d399' }}>USD</strong> 1 USD = {fmt(tasas.usd)} COP</span>
+              <span style={{ color: '#94a3b8' }}><strong style={{ color: '#f472b6' }}>VES</strong> 1 VES = {fmt(tasas.ves, 1)} COP</span>
+              <button className="btn btn-outline btn-sm" onClick={() => setModalTasas(true)}>Editar</button>
+            </div>
+          ) : (
+            <span style={{ color: '#64748b' }}>Cargando tasas...</span>
+          )}
         </div>
       </div>
 

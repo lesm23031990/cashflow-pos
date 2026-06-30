@@ -5,12 +5,11 @@ const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'precios.db');
 
+let SQL = null;
 let db = null;
 
 async function conectar() {
-  if (db) return db;
-
-  const SQL = await initSqlJs();
+  if (!SQL) SQL = await initSqlJs();
 
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH);
@@ -130,13 +129,17 @@ function ejecutar(sql, params) {
 }
 
 function consultar(sql, params) {
-  const stmt = db.prepare(sql);
+  if (!fs.existsSync(DB_PATH)) return [];
+  const buffer = fs.readFileSync(DB_PATH);
+  const tempDb = new SQL.Database(buffer);
+  const stmt = tempDb.prepare(sql);
   if (params) stmt.bind(params);
   const rows = [];
   while (stmt.step()) {
     rows.push(stmt.getAsObject());
   }
   stmt.free();
+  tempDb.close();
   return rows;
 }
 

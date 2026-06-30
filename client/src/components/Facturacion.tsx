@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Producto, Cliente, MetodoPago, Factura, Tasas, FacturaDetalle } from '../types'
 import {
-  getProductos, getClientes, getFacturas, getFactura, getMetodosPago, getTasas,
-  crearFactura, actualizarFactura, crearCliente, actualizarTasas,
+  getProductos, getClientes, getFacturas, getFactura, getMetodosPago,
+  crearFactura, actualizarFactura, crearCliente,
 } from '../api'
+import { useTasas } from '../TasasContext'
 import Toast from './Toast'
 
 function fmt(n: number, frac?: number) {
@@ -20,7 +21,7 @@ export default function Facturacion() {
   const [clientesList, setClientesList] = useState<Cliente[]>([])
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([])
   const [facturas, setFacturas] = useState<Factura[]>([])
-  const [tasas, setTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
+  const { tasas, guardarTasas: contextGuardarTasas } = useTasas()
 
   const [detalles, setDetalles] = useState<(FacturaDetalle & { _tempId: number })[]>([])
   const [nextTempId, setNextTempId] = useState(1)
@@ -41,7 +42,7 @@ export default function Facturacion() {
   const [modalCliente, setModalCliente] = useState(false)
   const [modalFactura, setModalFactura] = useState<Factura | null>(null)
   const [modalTasas, setModalTasas] = useState(false)
-  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 3500, ves: 4.7 })
+  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 0, ves: 0 })
   const [consultarOpen, setConsultarOpen] = useState(false)
   const [consSearch, setConsSearch] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
@@ -59,8 +60,11 @@ export default function Facturacion() {
     getClientes().then(setClientesList)
     getMetodosPago().then(setMetodosPago)
     getFacturas().then(setFacturas)
-    getTasas().then(t => { setTasas(t); setEditTasas(t) })
   }
+
+  useEffect(() => {
+    if (tasas) setEditTasas(tasas)
+  }, [tasas])
 
   useEffect(() => { cargarDatos() }, [])
 
@@ -159,8 +163,8 @@ export default function Facturacion() {
   }
 
   function guardarTasas() {
-    actualizarTasas(editTasas.usd, editTasas.ves)
-      .then(t => { setTasas(t); setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
+    contextGuardarTasas(editTasas.usd, editTasas.ves)
+      .then(() => { setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
       .catch(() => setToast({ msg: 'Error al guardar tasas', err: true }))
   }
 
@@ -475,8 +479,8 @@ export default function Facturacion() {
                       <td>{p.p}</td>
                       <td style={{ color: '#64748b', fontSize: '.8125rem' }}>{p.m || ''}</td>
                       <td className="col-price" style={{ color: '#fbbf24' }}>${fmt(p.v)}</td>
-                      <td className="col-price" style={{ color: '#34d399' }}>${(tasas.usd > 0 ? p.v / tasas.usd : 0).toFixed(2)}</td>
-                      <td className="col-price" style={{ color: '#f472b6' }}>Bs {fmt(tasas.ves > 0 ? p.v / tasas.ves : 0, 2)}</td>
+                      <td className="col-price" style={{ color: '#34d399' }}>${Number(tasas && tasas.usd > 0 ? p.v / tasas.usd : 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="col-price" style={{ color: '#f472b6' }}>Bs {fmt(tasas && tasas.ves > 0 ? p.v / tasas.ves : 0, 2)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Producto } from '../types'
 
 const CATEGORIAS = [
@@ -20,6 +20,9 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
   const [v, setV] = useState('')
   const [saving, setSaving] = useState(false)
 
+  const lastBarcodeTime = useRef(0)
+  const isScanningBarcode = useRef(false)
+
   useEffect(() => {
     if (producto) {
       setP(producto.p || '')
@@ -31,6 +34,24 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
       setP(''); setB(''); setM(''); setC('Otra'); setV('')
     }
   }, [producto])
+
+  function handleBarcodeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const now = Date.now()
+    const elapsed = now - lastBarcodeTime.current
+    lastBarcodeTime.current = now
+
+    if (elapsed < 50) {
+      if (!isScanningBarcode.current) {
+        isScanningBarcode.current = true
+        setB(e.target.value.slice(-1))
+      } else {
+        setB(e.target.value)
+      }
+    } else {
+      isScanningBarcode.current = false
+      setB(e.target.value)
+    }
+  }
 
   function handleSubmit() {
     if (!p.trim()) return
@@ -50,7 +71,7 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
         </div>
         <div className="campo">
           <label htmlFor="frmBarcode">Código de barras</label>
-          <input id="frmBarcode" value={b} onChange={e => setB(e.target.value)} placeholder="Escanea o escribe el código" />
+          <input id="frmBarcode" value={b} onChange={handleBarcodeChange} placeholder="Escanea o escribe el código" />
         </div>
         <div className="campo">
           <label htmlFor="frmMarca">Marca</label>
