@@ -40,6 +40,8 @@ async function conectar() {
     )
   `);
 
+  db.run('INSERT OR IGNORE INTO tasas (id, usd, ves) VALUES (1, 3500, 4.70)');
+
   db.run(`
     CREATE TABLE IF NOT EXISTS usuarios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

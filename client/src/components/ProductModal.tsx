@@ -3,7 +3,8 @@ import type { Producto } from '../types'
 
 const CATEGORIAS = [
   'Cervezas y Bebidas', 'Lácteos y Bebidas', 'Chocolates y Dulces',
-  'Sangría y Licores', 'Refrescos y Aguas', 'Snacks y Varios', 'Otra',
+  'Sangría y Licores', 'Refrescos y Aguas', 'Snacks y Varios',
+  'Víveres', 'Medicamentos', 'Venezolano', 'Colombiano', 'Otra',
 ]
 
 interface Props {
@@ -41,7 +42,7 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
   }
 
   return (
-    <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="modal-overlay abierto">
       <div className="modal">
         <h2>{producto?.id ? 'Editar producto' : 'Nuevo producto'}</h2>
         <div className="campo">
@@ -50,7 +51,7 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
         </div>
         <div className="campo">
           <label htmlFor="frmBarcode">Código de barras</label>
-          <input id="frmBarcode" value={b} onChange={e => setB(e.target.value)} placeholder="Escanea o escribe el código" />
+          <input id="frmBarcode" value={b} onChange={e => setB(e.target.value)} onFocus={e => e.target.select()} placeholder="Escanea o escribe el código" />
         </div>
         <div className="campo">
           <label htmlFor="frmMarca">Marca</label>
