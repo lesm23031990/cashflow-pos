@@ -5,12 +5,11 @@ const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'precios.db');
 
+let SQL = null;
 let db = null;
 
 async function conectar() {
-  if (db) return db;
-
-  const SQL = await initSqlJs();
+  if (!SQL) SQL = await initSqlJs();
 
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH);
@@ -20,6 +19,13 @@ async function conectar() {
   }
 
   db.run('PRAGMA foreign_keys = ON');
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS metodos_pago (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE
+    )
+  `);
 
   db.run(`
     CREATE TABLE IF NOT EXISTS productos (
@@ -99,10 +105,29 @@ async function conectar() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS cierres_caja (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha_inicio TEXT NOT NULL,
+      fecha_fin TEXT NOT NULL,
+      total_ventas REAL NOT NULL DEFAULT 0,
+      total_descuentos REAL NOT NULL DEFAULT 0,
+      cantidad_facturas INTEGER NOT NULL DEFAULT 0,
+      resumen_metodos_pago TEXT DEFAULT '{}',
+      created_at TEXT NOT NULL
+    )
+  `);
+
   // Migraciones post-creación (para bases existentes)
   try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
   try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE facturas ADD COLUMN cierre_id INTEGER DEFAULT NULL"); } catch(e) {}
+  try { db.run("ALTER TABLE facturas ADD COLUMN nombre_extra TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN codigo_barras TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN marca TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN categoria TEXT DEFAULT ''"); } catch(e) {}
 
+  guardar();
   return db;
 }
 
@@ -122,13 +147,17 @@ function ejecutar(sql, params) {
 }
 
 function consultar(sql, params) {
-  const stmt = db.prepare(sql);
+  if (!fs.existsSync(DB_PATH)) return [];
+  const buffer = fs.readFileSync(DB_PATH);
+  const tempDb = new SQL.Database(buffer);
+  const stmt = tempDb.prepare(sql);
   if (params) stmt.bind(params);
   const rows = [];
   while (stmt.step()) {
     rows.push(stmt.getAsObject());
   }
   stmt.free();
+  tempDb.close();
   return rows;
 }
 

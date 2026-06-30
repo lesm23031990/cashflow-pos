@@ -102,6 +102,7 @@ tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
   background: #1e293b; border-radius: 12px; padding: 24px; width: 90%; max-width: 420px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
+.modal-sm { max-width: 26rem; }
 .modal h2 { margin-bottom: 1rem; color: #f1f5f9; }
 .campo { margin-bottom: 1rem; }
 .campo label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
@@ -160,6 +161,41 @@ tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .total-valor { font-size: 1.5rem; font-weight: 700; color: #34d399; font-family: monospace; }
 .action-row { display: flex; gap: .5rem; margin-top: .75rem; }
 .action-row .btn-lg { flex: 1; padding: .65rem 1.25rem; font-size: .9375rem; font-weight: 600; }
+.qty-inp {
+  width: 3.2rem; text-align: center; background: #0b1120; color: #e2e8f0;
+  border: 1px solid #1e293b; border-radius: .3rem; padding: .25rem .2rem;
+  font-size: .8125rem; font-family: monospace; outline: none;
+}
+.qty-inp:focus { border-color: #06b6d4; }
+.prod-inp, .cliente-inp {
+  background: #0b1120; color: #e2e8f0; border: 1px solid #334155;
+  border-radius: .4rem; padding: .5rem .7rem; font-size: .875rem; width: 100%; outline: none;
+}
+.prod-inp:focus, .cliente-inp:focus { border-color: #06b6d4; }
+.suggest-nombre { color: #e2e8f0; }
+.row-selected { background: #06b6d408 !important; }
+.total-equiv { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .15rem; }
+.equiv-item { font-size: .75rem; color: #64748b; font-family: monospace; }
+.equiv-item:first-child { color: #34d399; }
+.equiv-item:last-child { color: #f472b6; }
+.cambio-box {
+  display: flex; align-items: center; gap: .75rem;
+  background: #065f4620; border: 1px solid #065f4640; border-radius: .4rem;
+  padding: .35rem .6rem; min-width: 8rem; flex-wrap: wrap;
+}
+.cambio-box > div { display: flex; align-items: center; gap: .5rem; }
+.cambio-label { font-size: .6875rem; color: #34d399; text-transform: uppercase; letter-spacing: .04em; }
+.cambio-valor { font-size: 1.125rem; font-weight: 700; color: #34d399; font-family: monospace; }
+.cambio-usd { font-size: .75rem; color: #64748b; font-family: monospace; }
+.cambio-ves { font-size: .75rem; color: #f472b6; font-family: monospace; }
+.efectivo-inputs { display: flex; flex-direction: column; gap: .3rem; min-width: 100%; }
+.efectivo-row { display: flex; align-items: center; gap: .4rem; }
+.efectivo-m { font-size: .75rem; font-weight: 600; width: 2.5rem; font-family: monospace; }
+.efectivo-inp { flex: 1; background: #0b1120; color: #e2e8f0; border: 1px solid #1e293b; border-radius: .3rem; padding: .35rem .5rem; font-size: .8125rem; outline: none; }
+.efectivo-inp:focus { border-color: #06b6d4; }
+.efectivo-equiv { font-size: .6875rem; color: #64748b; font-family: monospace; white-space: nowrap; }
+.efectivo-total { font-size: .75rem; color: #94a3b8; text-align: right; font-family: monospace; }
+.split-left-inner { overflow-y: auto; max-height: calc(100vh - 110px); padding-right: .25rem; }
 
 /* ── Factura View ──────────────────────────────── */
 .factura-meta { font-size: .8125rem; color: #94a3b8; margin-bottom: .75rem; }
@@ -191,6 +227,100 @@ tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .col-price { text-align: right; font-family: monospace; }
 .col-qty { text-align: center; width: 3.5rem; }
 .col-del { width: 2.5rem; text-align: center; }
+
+/* ── Split Layout (Facturacion) ───────────────── */
+.split-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: .75rem;
+  padding: .75rem;
+  overflow: hidden;
+}
+.split-left {
+  flex: 3;
+  min-width: 0;
+  overflow-y: auto;
+}
+.split-right {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  overflow: hidden;
+}
+
+/* ── Cierre de Caja ─────────────────────────── */
+.cierre-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.cierre-kpis {
+  display: flex;
+  gap: .5rem;
+}
+.cierre-kpi {
+  flex: 1;
+  background: #0b1120;
+  border: 1px solid #1e293b;
+  border-radius: .5rem;
+  padding: .5rem;
+  text-align: center;
+}
+.cierre-kpi-val {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  font-family: monospace;
+}
+.cierre-kpi-label {
+  display: block;
+  font-size: .625rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-top: .15rem;
+}
+.cierre-metodos {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+.cierre-metodo {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .75rem;
+  background: #0b1120;
+  border: 1px solid #1e293b;
+  border-radius: .375rem;
+  padding: .35rem .5rem;
+}
+.cierre-metodo-nombre {
+  flex: 1;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.cierre-metodo-cant {
+  color: #64748b;
+  font-size: .6875rem;
+  white-space: nowrap;
+}
+.cierre-metodo-total {
+  font-family: monospace;
+  color: #34d399;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.row-espera {
+  background: rgba(245, 158, 11, 0.04) !important;
+}
+.row-espera:hover {
+  background: rgba(245, 158, 11, 0.08) !important;
+}
 
 /* ── Shortcuts bar ────────────────────────────── */
 .shortcuts-bar { background: #0b1120; border-top: 1px solid #1e293b; padding: .4rem .75rem; display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; font-size: .6875rem; color: #64748b; }

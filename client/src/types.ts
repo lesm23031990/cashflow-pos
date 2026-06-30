@@ -43,6 +43,7 @@ export interface Factura {
   total: number
   status: string
   metodo_pago: string
+  nombre_extra: string
   detalles: FacturaDetalle[]
   total_usd: number
   total_ves: number
@@ -51,4 +52,34 @@ export interface Factura {
 export interface MetodoPago {
   id: number
   nombre: string
+}
+
+export interface ResumenMetodoPago {
+  cantidad: number
+  total: number
+}
+
+export interface ResumenCierre {
+  total_ventas: number
+  total_descuentos: number
+  cantidad_facturas: number
+  resumen_metodos_pago: Record<string, ResumenMetodoPago>
+}
+
+export interface CierreCaja {
+  id: number
+  fecha_inicio: string
+  fecha_fin: string
+  total_ventas: number
+  total_descuentos: number
+  cantidad_facturas: number
+  resumen_metodos_pago: string
+  created_at: string
+}
+
+export interface ResumenCierreResponse {
+  facturas: Factura[]
+  resumen: ResumenCierre
+  fecha_inicio: string
+  ultimo_cierre: CierreCaja | null
 }

@@ -151,7 +151,7 @@ async function sembrar() {
 
   const metodos = consultar('SELECT COUNT(*) AS count FROM metodos_pago');
   if (metodos[0].count === 0) {
-    var defaults = ['Efectivo', 'Débito', 'Pago Móvil', 'Bancolombia'];
+    var defaults = ['Efectivo', 'Débito', 'Pago Móvil', 'Bancolombia', 'Punto de Venta'];
     for (var i = 0; i < defaults.length; i++) {
       ejecutar('INSERT INTO metodos_pago (nombre) VALUES (?)', [defaults[i]]);
     }

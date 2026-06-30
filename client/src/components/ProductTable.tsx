@@ -2,7 +2,7 @@ import type { Producto } from '../types'
 
 interface Props {
   productos: Producto[]
-  tasas: { usd: number; ves: number }
+  tasas: { usd: number; ves: number } | null
   filtro: string
   onEdit: (idx: number) => void
   onDelete: (idx: number) => void
@@ -15,7 +15,8 @@ function esc(s: string) {
 }
 
 export default function ProductTable({ productos, tasas, filtro, onEdit, onDelete }: Props) {
-  const { usd, ves } = tasas
+  const usd = tasas?.usd ?? 0
+  const ves = tasas?.ves ?? 0
 
   const lista = filtro
     ? productos.filter(item => {
@@ -69,7 +70,7 @@ export default function ProductTable({ productos, tasas, filtro, onEdit, onDelet
                 <td>{esc(item.m || '')}</td>
                 <td>{esc(item.c || '')}</td>
                 <td className="num precio-cop">${Number(cop).toLocaleString('es-CO')}</td>
-                <td className="num precio-usd">${usdVal.toFixed(4)}</td>
+                <td className="num precio-usd">${Number(usdVal).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="num precio-ves">Bs {Number(vesVal).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</td>
                 <td className="acciones">
                   <button onClick={() => onEdit(idx)} title="Editar">✏️</button>
