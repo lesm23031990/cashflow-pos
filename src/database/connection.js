@@ -107,6 +107,9 @@ async function conectar() {
   // Migraciones post-creación (para bases existentes)
   try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
   try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN codigo_barras TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN marca TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN categoria TEXT DEFAULT ''"); } catch(e) {}
 
   return db;
 }
