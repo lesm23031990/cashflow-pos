@@ -103,13 +103,29 @@ async function conectar() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS cierres_caja (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha_inicio TEXT NOT NULL,
+      fecha_fin TEXT NOT NULL,
+      total_ventas REAL NOT NULL DEFAULT 0,
+      total_descuentos REAL NOT NULL DEFAULT 0,
+      cantidad_facturas INTEGER NOT NULL DEFAULT 0,
+      resumen_metodos_pago TEXT DEFAULT '{}',
+      created_at TEXT NOT NULL
+    )
+  `);
+
   // Migraciones post-creación (para bases existentes)
   try { db.run("ALTER TABLE facturas ADD COLUMN status TEXT DEFAULT 'en espera'"); } catch(e) {}
   try { db.run("ALTER TABLE facturas ADD COLUMN metodo_pago TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE facturas ADD COLUMN cierre_id INTEGER DEFAULT NULL"); } catch(e) {}
+  try { db.run("ALTER TABLE facturas ADD COLUMN nombre_extra TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE productos ADD COLUMN codigo_barras TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE productos ADD COLUMN marca TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE productos ADD COLUMN categoria TEXT DEFAULT ''"); } catch(e) {}
 
+  guardar();
   return db;
 }
 

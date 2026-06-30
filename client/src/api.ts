@@ -1,4 +1,4 @@
-import type { Producto, Tasas, Cliente, Factura, MetodoPago } from './types'
+import type { Producto, Tasas, Cliente, Factura, MetodoPago, CierreCaja, ResumenCierreResponse } from './types'
 
 const BASE = '/api'
 
@@ -163,4 +163,17 @@ export function actualizarMetodoPago(id: number, nombre: string): Promise<Metodo
 
 export function eliminarMetodoPago(id: number): Promise<void> {
   return request('/metodos-pago/' + id, { method: 'DELETE' })
+}
+
+// Cierres de Caja
+export function getUltimoCierre(): Promise<CierreCaja | null> {
+  return request('/cierres-caja/ultimo')
+}
+
+export function getResumenCierre(): Promise<ResumenCierreResponse> {
+  return request('/cierres-caja/resumen')
+}
+
+export function crearCierre(): Promise<CierreCaja> {
+  return request('/cierres-caja', { method: 'POST' })
 }

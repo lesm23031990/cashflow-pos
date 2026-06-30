@@ -30,7 +30,7 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { cliente_id, moneda, descuento, metodo_pago, detalles, cliente_nombre, cliente_telefono } = req.body;
+  const { cliente_id, moneda, descuento, metodo_pago, detalles, cliente_nombre, cliente_telefono, nombre_extra } = req.body;
   if (!detalles || detalles.length === 0) {
     return res.status(400).json({ error: 'Faltan datos: detalles' });
   }
@@ -67,8 +67,8 @@ router.post('/', (req, res) => {
   const mp = metodo_pago || '';
 
   ejecutar(
-    'INSERT INTO facturas (cliente_id, fecha, moneda, tasa_usd, tasa_ves, subtotal, descuento, total, status, metodo_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [cid, fecha, m, tasas.usd, tasas.ves, subtotal, desc, total, 'en espera', mp]
+    'INSERT INTO facturas (cliente_id, fecha, moneda, tasa_usd, tasa_ves, subtotal, descuento, total, status, metodo_pago, nombre_extra) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [cid, fecha, m, tasas.usd, tasas.ves, subtotal, desc, total, 'en espera', mp, nombre_extra || '']
   );
 
   const factura = primero('SELECT MAX(id) AS id FROM facturas');
@@ -95,12 +95,13 @@ router.put('/:id', (req, res) => {
   const existe = primero('SELECT id, status FROM facturas WHERE id = ?', [id]);
   if (!existe) return res.status(404).json({ error: 'Factura no encontrada' });
 
-  const { status, metodo_pago, detalles } = req.body;
+  const { status, metodo_pago, detalles, nombre_extra } = req.body;
 
   const campos = [];
   const valores = [];
   if (status !== undefined) { campos.push('status = ?'); valores.push(status); }
   if (metodo_pago !== undefined) { campos.push('metodo_pago = ?'); valores.push(metodo_pago); }
+  if (nombre_extra !== undefined) { campos.push('nombre_extra = ?'); valores.push(nombre_extra); }
 
   if (detalles && Array.isArray(detalles) && detalles.length > 0) {
     const tasas = primero('SELECT usd, ves FROM tasas WHERE id = 1');

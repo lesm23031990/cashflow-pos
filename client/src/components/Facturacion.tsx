@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { Producto, Cliente, MetodoPago, Factura, Tasas, FacturaDetalle } from '../types'
+import type { Producto, MetodoPago, Factura, FacturaDetalle, ResumenCierreResponse, CierreCaja } from '../types'
 import {
-  getProductos, getClientes, getFacturas, getFactura, getMetodosPago,
-  crearFactura, actualizarFactura, crearCliente,
+  getProductos, getFacturas, getFactura, getMetodosPago,
+  crearFactura, actualizarFactura, getProductoByBarcode,
+  getResumenCierre, crearCierre,
 } from '../api'
 import { useTasas } from '../TasasContext'
 import Toast from './Toast'
@@ -18,53 +19,61 @@ function badge(status: string) {
 
 export default function Facturacion() {
   const [productos, setProductos] = useState<Producto[]>([])
-  const [clientesList, setClientesList] = useState<Cliente[]>([])
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([])
-  const [facturas, setFacturas] = useState<Factura[]>([])
-  const { tasas, guardarTasas: contextGuardarTasas } = useTasas()
+  const { tasas } = useTasas()
 
   const [detalles, setDetalles] = useState<(FacturaDetalle & { _tempId: number })[]>([])
   const [nextTempId, setNextTempId] = useState(1)
+
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<Producto[]>([])
-  const [selectedProd, setSelectedProd] = useState<Producto | null>(null)
-  const [cantidad, setCantidad] = useState(1)
   const [suggestIdx, setSuggestIdx] = useState(-1)
   const [selectedRow, setSelectedRow] = useState(-1)
 
-  const [clienteId, setClienteId] = useState('')
-  const [moneda, setMoneda] = useState('COP')
-  const [descuento, setDescuento] = useState(0)
   const [metodoPago, setMetodoPago] = useState('')
+  const [recibidoCOP, setRecibidoCOP] = useState(0)
+  const [recibidoUSD, setRecibidoUSD] = useState(0)
+  const [recibidoVES, setRecibidoVES] = useState(0)
+  const [nombreExtra, setNombreExtra] = useState('')
   const [nuevoClienteNombre, setNuevoClienteNombre] = useState('')
   const [nuevoClienteTel, setNuevoClienteTel] = useState('')
 
-  const [modalCliente, setModalCliente] = useState(false)
   const [modalFactura, setModalFactura] = useState<Factura | null>(null)
-  const [modalTasas, setModalTasas] = useState(false)
-  const [editTasas, setEditTasas] = useState<Tasas>({ usd: 0, ves: 0 })
   const [consultarOpen, setConsultarOpen] = useState(false)
   const [consSearch, setConsSearch] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
+  const [calcOpen, setCalcOpen] = useState(false)
+  const [calcCOP, setCalcCOP] = useState('')
+  const [calcUSD, setCalcUSD] = useState('')
+  const [calcVES, setCalcVES] = useState('')
   const [generando, setGenerando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
 
+  const [resumenCierre, setResumenCierre] = useState<ResumenCierreResponse | null>(null)
+  const [cerrando, setCerrando] = useState(false)
+  const [modalCierre, setModalCierre] = useState(false)
+  const [cierreResultado, setCierreResultado] = useState<CierreCaja | null>(null)
+
   const searchRef = useRef<HTMLInputElement>(null)
-  const clienteRef = useRef<HTMLSelectElement>(null)
-  const monedaRef = useRef<HTMLSelectElement>(null)
-  const descuentoRef = useRef<HTMLInputElement>(null)
-  const consSearchRef = useRef<HTMLInputElement>(null)
+  const recibidoRef = useRef<HTMLInputElement>(null)
+
+  const lastScan = useRef(0)
+  const scanBuf = useRef('')
+
+  const totalCOP = detalles.reduce((s, d) => s + d.subtotal, 0)
+  const totalUSD = tasas && tasas.usd > 0 ? totalCOP / tasas.usd : 0
+  const totalVES = tasas && tasas.ves > 0 ? totalCOP / tasas.ves : 0
+  const totalRecibidoCOP = recibidoCOP + (recibidoUSD * (tasas?.usd || 0)) + (recibidoVES * (tasas?.ves || 0))
+  const cambioCOP = totalRecibidoCOP > totalCOP ? totalRecibidoCOP - totalCOP : 0
+  const cambioUSD = cambioCOP > 0 && tasas?.usd > 0 ? cambioCOP / tasas.usd : 0
+  const cambioVES = cambioCOP > 0 && tasas?.ves > 0 ? cambioCOP / tasas.ves : 0
 
   function cargarDatos() {
     getProductos().then(setProductos)
-    getClientes().then(setClientesList)
     getMetodosPago().then(setMetodosPago)
-    getFacturas().then(setFacturas)
+    getFacturas().then(() => {})
+    getResumenCierre().then(setResumenCierre).catch(() => {})
   }
-
-  useEffect(() => {
-    if (tasas) setEditTasas(tasas)
-  }, [tasas])
 
   useEffect(() => { cargarDatos() }, [])
 
@@ -77,29 +86,36 @@ export default function Facturacion() {
     setSuggestIdx(-1)
   }, [search])
 
-  const subtotal = detalles.reduce((s, d) => s + d.subtotal, 0)
-  const total = Math.max(0, subtotal - descuento)
-  const sim = moneda === 'COP' ? '$' : moneda === 'USD' ? '$' : 'Bs '
-
-  function agregarProducto(prod?: Producto) {
-    const p = prod || selectedProd
+  function agregarProducto(prod?: Producto | null, qty?: number) {
+    const p = prod || null
     if (!p) return
+    const q = qty ?? 1
     const existente = detalles.find(d => d.producto_id === p.id)
     if (existente) {
       setDetalles(detalles.map(d =>
         d._tempId === existente._tempId
-          ? { ...d, cantidad: d.cantidad + cantidad, subtotal: (d.cantidad + cantidad) * d.precio_unitario }
+          ? { ...d, cantidad: d.cantidad + q, subtotal: (d.cantidad + q) * d.precio_unitario }
           : d
       ))
     } else {
-      const nd = { _tempId: nextTempId, producto_id: p.id, producto_nombre: p.p, cantidad, precio_unitario: p.v, subtotal: cantidad * p.v }
+      const nd = { _tempId: nextTempId, producto_id: p.id, producto_nombre: p.p, cantidad: q, precio_unitario: p.v, subtotal: q * p.v }
       setNextTempId(nextTempId + 1)
       setDetalles([...detalles, nd])
     }
     setSearch('')
-    setSelectedProd(null)
     setCantidad(1)
+    setSearchResults([])
     searchRef.current?.focus()
+  }
+  const [cantidad, setCantidad] = useState(1)
+
+  function actualizarCantidad(tempId: number, nuevaCant: number) {
+    const c = Math.max(1, nuevaCant)
+    setDetalles(detalles.map(d =>
+      d._tempId === tempId
+        ? { ...d, cantidad: c, subtotal: c * d.precio_unitario }
+        : d
+    ))
   }
 
   function quitarDetalle(tempId: number) {
@@ -110,13 +126,67 @@ export default function Facturacion() {
     if (detalles.length > 0 && !confirm('¿Limpiar factura actual?')) return
     setDetalles([])
     setSelectedRow(-1)
-    setDescuento(0)
     setMetodoPago('')
-    setClienteId('')
-    setMoneda('COP')
+    setRecibidoCOP(0)
+    setRecibidoUSD(0)
+    setRecibidoVES(0)
+    setNombreExtra('')
+    setNuevoClienteNombre('')
+    setNuevoClienteTel('')
     setSearch('')
-    setSelectedProd(null)
     searchRef.current?.focus()
+  }
+
+  function buscarBarcode(codigo: string) {
+    getProductoByBarcode(codigo).then(p => {
+      if (p) {
+        agregarProducto(p, 1)
+      } else {
+        setToast({ msg: 'Producto no encontrado: ' + codigo, err: true })
+      }
+    }).catch(() => {
+      setToast({ msg: 'Error al buscar código', err: true })
+    })
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value
+    const now = Date.now()
+    scanBuf.current = val
+    lastScan.current = now
+    setSearch(val)
+    setSuggestIdx(-1)
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSuggestIdx(i => Math.min(i + 1, searchResults.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSuggestIdx(i => Math.max(i - 1, -1)) }
+    else if (e.key === 'Enter') {
+      const val = search.trim()
+      if (!val) return
+      if (suggestIdx >= 0 && searchResults[suggestIdx]) {
+        agregarProducto(searchResults[suggestIdx], 1)
+      } else if (searchResults.length === 1) {
+        agregarProducto(searchResults[0], 1)
+      } else {
+        const prod = productos.find(p => p.b === val)
+        if (prod) {
+          agregarProducto(prod, 1)
+        } else {
+          buscarBarcode(val)
+        }
+      }
+      setSearch('')
+    }
+    else if (e.key === 'Escape') { setSearch(''); setSearchResults([]) }
+  }
+
+  function handleCerrarCaja() {
+    if (!resumen || resumen.cantidad_facturas === 0) {
+      setToast({ msg: 'No hay facturas para cerrar', err: true }); return
+    }
+    if (!confirm(`¿Cerrar caja? ${resumen.cantidad_facturas} facturas, total $${fmt(resumen.total_ventas)}`)) return
+    cerrarCaja()
   }
 
   function generarFactura() {
@@ -129,12 +199,12 @@ export default function Facturacion() {
 
     setGenerando(true)
     const body: any = {
-      moneda,
-      descuento,
+      moneda: 'COP',
+      descuento: 0,
       metodo_pago: metodoPago,
       detalles: detalles.map(d => ({ producto_id: d.producto_id, cantidad: d.cantidad, precio_unitario: d.precio_unitario })),
+      nombre_extra: nombreExtra,
     }
-    if (clienteId) body.cliente_id = +clienteId
     if (nuevoClienteNombre) { body.cliente_nombre = nuevoClienteNombre; body.cliente_telefono = nuevoClienteTel }
 
     crearFactura(body)
@@ -142,8 +212,13 @@ export default function Facturacion() {
         setToast({ msg: 'Factura #' + f.id + ' generada' })
         setDetalles([])
         setSelectedRow(-1)
-        setDescuento(0)
         setMetodoPago('')
+        setRecibidoCOP(0)
+        setRecibidoUSD(0)
+        setRecibidoVES(0)
+        setNombreExtra('')
+        setNuevoClienteNombre('')
+        setNuevoClienteTel('')
         cargarDatos()
         setModalFactura(f)
       })
@@ -162,10 +237,17 @@ export default function Facturacion() {
       .catch(err => setToast({ msg: err.message, err: true }))
   }
 
-  function guardarTasas() {
-    contextGuardarTasas(editTasas.usd, editTasas.ves)
-      .then(() => { setModalTasas(false); setToast({ msg: 'Tasas actualizadas' }) })
-      .catch(() => setToast({ msg: 'Error al guardar tasas', err: true }))
+  function cerrarCaja() {
+    setCerrando(true)
+    crearCierre()
+      .then(c => {
+        setCierreResultado(c)
+        setModalCierre(true)
+        cargarDatos()
+        setToast({ msg: 'Cierre de caja realizado' })
+      })
+      .catch(err => setToast({ msg: err.message, err: true }))
+      .finally(() => setCerrando(false))
   }
 
   const consFiltrados = consSearch.trim()
@@ -175,176 +257,251 @@ export default function Facturacion() {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName
-      const isInput = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA'
       if (consultarOpen) return
 
       switch (e.key) {
         case 'F1': e.preventDefault(); setHelpOpen(true); break
-        case 'F2': e.preventDefault(); clienteRef.current?.focus(); break
         case 'F3': e.preventDefault(); searchRef.current?.focus(); searchRef.current?.select(); break
-        case 'F4': e.preventDefault(); monedaRef.current?.focus(); break
-        case 'F5': e.preventDefault(); descuentoRef.current?.focus(); descuentoRef.current?.select(); break
         case 'F6': e.preventDefault(); nuevaFactura(); break
+        case 'F7': e.preventDefault(); handleCerrarCaja(); break
+        case 'F8': e.preventDefault(); setCalcOpen(o => !o); break
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generarFactura() }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); nuevaFactura() }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [detalles, moneda, descuento, metodoPago, clienteId, nuevoClienteNombre, nuevoClienteTel, consultarOpen, helpOpen])
+  }, [detalles, metodoPago, nuevoClienteNombre, nuevoClienteTel, consultarOpen, helpOpen, recibidoCOP, recibidoUSD, recibidoVES])
+
+  const ultimoCierre = resumenCierre?.ultimo_cierre
+  const resumen = resumenCierre?.resumen
+  const facturasCierre = resumenCierre?.facturas || []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 56px)' }}>
-      <div style={{ flex: 1, overflowY: 'auto', maxWidth: '64rem', margin: '0 auto', padding: '0 .75rem 4rem', width: '100%' }}>
-        {/* Cliente */}
-        <div className="card card-cliente" style={{ borderLeft: '3px solid #06b6d4' }}>
-          <div className="card-head"><h2>Cliente</h2></div>
-          <div className="card-body">
-            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-              <select ref={clienteRef} className="sel" value={clienteId} onChange={e => setClienteId(e.target.value)} style={{ flex: 1 }}>
-                <option value="">Seleccionar cliente...</option>
-                {clientesList.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.documento ? ' (' + c.documento + ')' : ''}</option>)}
-              </select>
-              <button className="btn btn-outline btn-sm" onClick={() => setModalCliente(true)}>+ Nuevo</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Productos */}
-        <div className="card" style={{ borderLeft: '3px solid #22c55e' }}>
-          <div className="card-head"><h2>Productos</h2></div>
-          <div className="card-body">
-            <div className="search-row">
-              <div className="search-wrap">
-                <input ref={searchRef} type="text" className="inp" placeholder="Buscar producto..." value={search}
-                  onChange={e => { setSearch(e.target.value); setSuggestIdx(-1) }}
-                  onKeyDown={e => {
-                    if (e.key === 'ArrowDown') { e.preventDefault(); setSuggestIdx(i => Math.min(i + 1, searchResults.length - 1)) }
-                    else if (e.key === 'ArrowUp') { e.preventDefault(); setSuggestIdx(i => Math.max(i - 1, -1)) }
-                    else if (e.key === 'Enter') {
-                      if (suggestIdx >= 0 && searchResults[suggestIdx]) { agregarProducto(searchResults[suggestIdx]) }
-                      else if (selectedProd) { agregarProducto() }
-                    }
-                    else if (e.key === 'Escape') { setSearch(''); setSelectedProd(null) }
-                  }} />
-                {searchResults.length > 0 && search && (
-                  <div className="suggest">
-                    {searchResults.map((p, i) => (
-                      <div key={p.id} className={'suggest-item' + (i === suggestIdx ? ' hover' : '')}
-                        style={i === suggestIdx ? { background: '#1e293b' } : {}}
-                        onMouseDown={() => { setSelectedProd(p); setSearch(p.p); setSearchResults([]) }}>
-                        {p.p} {p.m ? <span className="suggest-marca">{p.m}</span> : ''}
-                        <span className="suggest-precio">${fmt(p.v)}</span>
+      <div className="split-layout">
+        {/* ── LEFT: Facturación ── */}
+        <div className="split-left">
+          <div className="split-left-inner">
+            {/* Productos */}
+            <div className="card" style={{ borderLeft: '3px solid #22c55e' }}>
+              <div className="card-head"><h2>Productos</h2></div>
+              <div className="card-body">
+                <div className="search-row">
+                  <div className="search-wrap">
+                    <input ref={searchRef} type="text" className="inp prod-inp scan-input" placeholder="Buscar producto o escanear código..." value={search}
+                      onChange={handleSearchChange}
+                      onKeyDown={handleSearchKeyDown} />
+                    {searchResults.length > 0 && search && (
+                      <div className="suggest">
+                        {searchResults.map((p, i) => (
+                          <div key={p.id} className={'suggest-item' + (i === suggestIdx ? ' hover' : '')}
+                            style={i === suggestIdx ? { background: '#1e293b' } : {}}
+                            onMouseDown={() => { agregarProducto(p, 1) }}>
+                            <span className="suggest-nombre">{p.p}</span>
+                            {p.m ? <span className="suggest-marca">{p.m}</span> : ''}
+                            <span className="suggest-precio">${fmt(p.v)}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                  <button className="btn btn-outline" onClick={() => setConsultarOpen(true)}>Consultar</button>
+                </div>
+
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr><th>Producto</th><th className="col-qty">Cant</th><th className="col-price">Precio</th><th className="col-price">Subtotal</th><th className="col-del"></th></tr>
+                    </thead>
+                    <tbody>
+                      {detalles.length === 0 ? (
+                        <tr><td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '1rem', fontSize: '.8125rem' }}>Sin productos — escanea o busca con Enter</td></tr>
+                      ) : detalles.map((d, i) => (
+                        <tr key={d._tempId} className={i === selectedRow ? 'row-selected' : ''} onClick={() => setSelectedRow(i)}>
+                          <td style={{ fontSize: '.8125rem' }}>{d.producto_nombre}</td>
+                          <td className="col-qty">
+                            <input type="number" className="qty-inp" value={d.cantidad}
+                              min={1} step={1}
+                              onChange={e => actualizarCantidad(d._tempId, Math.max(1, Math.floor(+e.target.value || 1)))}
+                              onClick={e => e.stopPropagation()} />
+                          </td>
+                          <td className="col-price">${fmt(d.precio_unitario)}</td>
+                          <td className="col-price">${fmt(d.subtotal)}</td>
+                          <td className="col-del">
+                            <button className="btn-del" onClick={() => quitarDetalle(d._tempId)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.85rem' }}>✖</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '.3rem', alignItems: 'center' }}>
-                <button className="btn btn-icon" onClick={() => setCantidad(c => Math.max(1, c - 1))} style={{ width: '2.2rem', height: '2.2rem', background: '#0b1120', color: '#94a3b8', border: '1px solid #1e293b', borderRadius: '.4rem', cursor: 'pointer' }}>−</button>
-                <input type="number" className="inp" value={cantidad} onChange={e => setCantidad(Math.max(1, +e.target.value || 1))} min={1} style={{ width: '3.5rem', textAlign: 'center' }} />
-                <button className="btn btn-icon" onClick={() => setCantidad(c => c + 1)} style={{ width: '2.2rem', height: '2.2rem', background: '#0b1120', color: '#94a3b8', border: '1px solid #1e293b', borderRadius: '.4rem', cursor: 'pointer' }}>+</button>
-              </div>
-              <button className="btn btn-primary" onClick={() => agregarProducto()}>Agregar</button>
-              <button className="btn btn-outline" onClick={() => setConsultarOpen(true)}>Consultar</button>
             </div>
 
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Producto</th><th className="col-qty">Cant</th><th className="col-price">Precio</th><th className="col-price">Subtotal</th><th className="col-del"></th></tr>
-                </thead>
-                <tbody>
-                  {detalles.length === 0 ? (
-                    <tr><td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '1rem', fontSize: '.8125rem' }}>Sin productos — busca y agrega con Enter</td></tr>
-                  ) : detalles.map((d, i) => (
-                    <tr key={d._tempId} style={i === selectedRow ? { background: '#06b6d410' } : {}} onClick={() => setSelectedRow(i)}>
-                      <td>{d.producto_nombre}</td>
-                      <td className="col-qty">{d.cantidad}</td>
-                      <td className="col-price">${fmt(d.precio_unitario)}</td>
-                      <td className="col-price">${fmt(d.subtotal)}</td>
-                      <td className="col-del"><button className="btn-del" onClick={() => quitarDetalle(d._tempId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✖</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Resumen y Pago */}
+            <div className="card" style={{ borderLeft: '3px solid #f59e0b' }}>
+              <div className="card-body">
+                <div className="factura-resumen">
+                  <div className="factura-field" style={{ minWidth: '10rem', flex: 1.5 }}>
+                    <label>Nombre (opcional)</label>
+                    <input type="text" className="inp" value={nombreExtra} onChange={e => setNombreExtra(e.target.value)} placeholder="Para facturas en espera" />
+                  </div>
+                  <div className="factura-field">
+                    <label>Método de Pago</label>
+                    <select className="sel" value={metodoPago} onChange={e => { setMetodoPago(e.target.value); setRecibidoCOP(0); setRecibidoUSD(0); setRecibidoVES(0); setNuevoClienteNombre(''); setNuevoClienteTel('') }}>
+                      <option value="">Seleccionar...</option>
+                      {metodosPago.map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
+                    </select>
+                  </div>
+                  {metodoPago && ['Efectivo', 'Bancolombia', 'Pago Móvil', 'Punto de Venta'].includes(metodoPago) && (
+                    <>
+                      <div className="efectivo-inputs">
+                        {['Efectivo', 'Bancolombia'].includes(metodoPago) && (
+                          <div className="efectivo-row">
+                            <span className="efectivo-m label">COP</span>
+                            <input type="number" className="inp efectivo-inp" value={recibidoCOP || ''}
+                              placeholder="$0" onChange={e => setRecibidoCOP(+e.target.value || 0)} min={0} />
+                          </div>
+                        )}
+                        {metodoPago === 'Efectivo' && (
+                          <div className="efectivo-row">
+                            <span className="efectivo-m label" style={{ color: '#34d399' }}>USD</span>
+                            <input type="number" className="inp efectivo-inp" value={recibidoUSD || ''}
+                              placeholder="$0" onChange={e => setRecibidoUSD(Math.max(0, +e.target.value || 0))} min={0} step={0.01} />
+                            {recibidoUSD > 0 && <span className="efectivo-equiv">≈ ${fmt(recibidoUSD * (tasas?.usd || 0))}</span>}
+                          </div>
+                        )}
+                        {(metodoPago === 'Pago Móvil' || metodoPago === 'Punto de Venta') && (
+                          <div className="efectivo-row">
+                            <span className="efectivo-m label" style={{ color: '#f472b6' }}>VES</span>
+                            <input type="number" className="inp efectivo-inp" value={recibidoVES || ''}
+                              placeholder="Bs 0" onChange={e => setRecibidoVES(Math.max(0, +e.target.value || 0))} min={0} step={0.01} />
+                            {recibidoVES > 0 && <span className="efectivo-equiv">≈ ${fmt(recibidoVES * (tasas?.ves || 0))}</span>}
+                          </div>
+                        )}
+                      </div>
+                      {totalRecibidoCOP > 0 && (
+                        <div className="efectivo-total">Recibido: ${fmt(totalRecibidoCOP)}</div>
+                      )}
+                      {cambioCOP > 0 && (
+                        <div className="cambio-box">
+                          <div>
+                            <span className="cambio-label">Cambio</span>
+                            <span className="cambio-valor">${fmt(cambioCOP)}</span>
+                          </div>
+                          {cambioUSD > 0 && <span className="cambio-usd">≈ USD ${fmt(cambioUSD, 2)}</span>}
+                          {cambioVES > 0 && <span className="cambio-ves">≈ VES Bs {fmt(cambioVES, 2)}</span>}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {(metodoPago === 'Pago Móvil' || metodoPago === 'Bancolombia') && (
+                    <>
+                      <div className="factura-field">
+                        <label>Nombre <span style={{ color: '#ef4444' }}>*</span></label>
+                        <input type="text" value={nuevoClienteNombre} onChange={e => setNuevoClienteNombre(e.target.value)} placeholder="Nombre del cliente" />
+                      </div>
+                      <div className="factura-field">
+                        <label>Teléfono <span style={{ color: '#ef4444' }}>*</span></label>
+                        <input type="text" value={nuevoClienteTel} onChange={e => setNuevoClienteTel(e.target.value)} placeholder="Número de teléfono" />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="total-box">
+                  <span className="total-label">TOTAL</span>
+                  <span className="total-valor">${fmt(totalCOP)}</span>
+                  <div className="total-equiv">
+                    {totalUSD > 0 && <span className="equiv-item">USD ${fmt(totalUSD, 2)}</span>}
+                    {totalVES > 0 && <span className="equiv-item">Bs {fmt(totalVES, 2)}</span>}
+                  </div>
+                </div>
+
+                <div className="action-row">
+                  <button className="btn btn-cancel btn-lg" onClick={nuevaFactura}>Nueva</button>
+                  <button className="btn btn-primary btn-lg" onClick={generarFactura} disabled={generando}>
+                    {generando ? 'Generando...' : 'Generar Factura'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Resumen */}
-        <div className="card" style={{ borderLeft: '3px solid #f59e0b' }}>
-          <div className="card-body">
-            <div className="factura-resumen">
-              <div className="factura-field">
-                <label>Moneda</label>
-                <select ref={monedaRef} className="sel" value={moneda} onChange={e => setMoneda(e.target.value)}>
-                  <option value="COP">COP $</option>
-                  <option value="USD">USD $</option>
-                  <option value="VES">VES Bs</option>
-                </select>
-              </div>
-              <div className="factura-field">
-                <label>Descuento</label>
-                <input ref={descuentoRef} type="number" value={descuento} onChange={e => setDescuento(+e.target.value || 0)} min={0} step={100} />
-              </div>
-              <div className="factura-field">
-                <label>Método de Pago</label>
-                <select className="sel" value={metodoPago} onChange={e => { setMetodoPago(e.target.value); setNuevoClienteNombre(''); setNuevoClienteTel('') }}>
-                  <option value="">Seleccionar...</option>
-                  {metodosPago.map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
-                </select>
-              </div>
-              {(metodoPago === 'Pago Móvil' || metodoPago === 'Bancolombia') && (
-                <>
-                  <div className="factura-field">
-                    <label>Nombre <span style={{ color: '#ef4444' }}>*</span></label>
-                    <input type="text" value={nuevoClienteNombre} onChange={e => setNuevoClienteNombre(e.target.value)} placeholder="Nombre del cliente" />
-                  </div>
-                  <div className="factura-field">
-                    <label>Teléfono <span style={{ color: '#ef4444' }}>*</span></label>
-                    <input type="text" value={nuevoClienteTel} onChange={e => setNuevoClienteTel(e.target.value)} placeholder="Número de teléfono" />
-                  </div>
-                </>
+        {/* ── RIGHT: Cierre + Listado ── */}
+        <div className="split-right">
+          <div className="card" style={{ borderLeft: '3px solid #a855f7' }}>
+            <div className="card-head">
+              <h2>Cierre de Caja</h2>
+              {ultimoCierre && (
+                <span style={{ fontSize: '.6875rem', color: '#64748b' }}>
+                  {ultimoCierre.fecha_fin.slice(0, 16)}
+                </span>
               )}
-              <div className="total-box">
-                <span className="total-label">TOTAL</span>
-                <span className="total-valor">{sim}{fmt(total)}</span>
-              </div>
             </div>
-            <div className="action-row">
-              <button className="btn btn-cancel btn-lg" onClick={nuevaFactura}>Nueva</button>
-              <button className="btn btn-primary btn-lg" onClick={generarFactura} disabled={generando}>
-                {generando ? 'Generando...' : 'Generar Factura'}
-              </button>
+            <div className="card-body">
+              {resumen ? (
+                <div className="cierre-resumen">
+                  <div className="cierre-kpis">
+                    <div className="cierre-kpi">
+                      <span className="cierre-kpi-val">{resumen.cantidad_facturas}</span>
+                      <span className="cierre-kpi-label">Facturas</span>
+                    </div>
+                    <div className="cierre-kpi">
+                      <span className="cierre-kpi-val" style={{ color: '#34d399' }}>${fmt(resumen.total_ventas)}</span>
+                      <span className="cierre-kpi-label">Ventas</span>
+                    </div>
+                  </div>
+                  {Object.keys(resumen.resumen_metodos_pago).length > 0 && (
+                    <div className="cierre-metodos">
+                      {Object.entries(resumen.resumen_metodos_pago).map(([mp, data]) => (
+                        <div key={mp} className="cierre-metodo">
+                          <span className="cierre-metodo-nombre">{mp}</span>
+                          <span className="cierre-metodo-cant">{data.cantidad}</span>
+                          <span className="cierre-metodo-total">${fmt(data.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button className="btn btn-primary btn-lg" onClick={cerrarCaja} disabled={cerrando} style={{ marginTop: '.5rem', width: '100%' }}>
+                    {cerrando ? 'Cerrando...' : 'Cerrar Caja'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1rem', color: '#475569', fontSize: '.8125rem' }}>Cargando...</div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Historial */}
-        <div className="card" style={{ borderLeft: '3px solid #6366f1' }}>
-          <div className="card-head"><h2>Últimas Facturas</h2></div>
-          <div className="card-body">
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>#</th><th>Cliente</th><th>Fecha</th><th className="col-price">Total</th><th>Moneda</th><th>Status</th><th>Pago</th><th className="col-del"></th></tr>
-                </thead>
-                <tbody>
-                  {facturas.length === 0 ? (
-                    <tr><td colSpan={8} style={{ textAlign: 'center', color: '#475569', padding: '.75rem', fontSize: '.8125rem' }}>Sin facturas aún</td></tr>
-                  ) : facturas.slice(0, 20).map(f => (
-                    <tr key={f.id}>
-                      <td>{f.id}</td><td>{f.cliente_nombre}</td><td>{f.fecha.slice(0, 10)}</td>
-                      <td className="col-price">{f.moneda === 'VES' ? 'Bs ' : '$'}{fmt(f.total)}</td>
-                      <td>{f.moneda}</td>
-                      <td>{badge(f.status || 'en espera')}</td>
-                      <td>{f.metodo_pago || '—'}</td>
-                      <td className="col-del"><button className="btn-act" onClick={() => verFactura(f.id)} style={{ background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer' }}>Ver</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="card" style={{ borderLeft: '3px solid #6366f1', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div className="card-head"><h2>Facturas ({facturasCierre.length})</h2></div>
+            <div className="card-body" style={{ flex: 1, overflow: 'auto', paddingBottom: '.5rem' }}>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>#</th><th>Nombre</th><th className="col-price">Total</th><th>Pago</th><th style={{ width: '4rem' }}></th></tr>
+                  </thead>
+                  <tbody>
+                    {facturasCierre.length === 0 ? (
+                      <tr><td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '.75rem', fontSize: '.8125rem' }}>Sin facturas en este turno</td></tr>
+                    ) : facturasCierre.map(f => (
+                      <tr key={f.id} className={f.status === 'en espera' ? 'row-espera' : ''}>
+                        <td style={{ fontWeight: 600 }}>{f.id}</td>
+                        <td style={{ fontSize: '.8125rem' }}>{f.nombre_extra || '—'}</td>
+                        <td className="col-price" style={{ fontSize: '.8125rem' }}>
+                          {badge(f.status || 'en espera')}
+                          <span style={{ marginLeft: '.4rem' }}>${fmt(f.total)}</span>
+                        </td>
+                        <td style={{ fontSize: '.8125rem', color: '#94a3b8' }}>{f.metodo_pago || '—'}</td>
+                        <td><button className="btn btn-sm btn-outline" onClick={() => verFactura(f.id)}>Ver</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -353,50 +510,24 @@ export default function Facturacion() {
       <div className="shortcuts-bar">
         <span><kbd>F1</kbd> Ayuda</span>
         <span><kbd>F3</kbd> Buscar</span>
+        <span><kbd>F6</kbd> Nueva</span>
+        <span><kbd>F7</kbd> Cerrar Caja</span>
         <span><kbd>Ctrl+N</kbd> Nueva</span>
         <span><kbd>Ctrl+Enter</kbd> Generar</span>
         <span><kbd>Esc</kbd> Cerrar</span>
+        <button className="btn btn-sm btn-primary" onClick={handleCerrarCaja}
+          style={{ marginLeft: 'auto', fontSize: '.6875rem', padding: '.2rem .6rem' }}>
+          Cerrar Caja
+        </button>
       </div>
 
-      {/* Modal Cliente */}
-      {modalCliente && (
-        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) setModalCliente(false) }}>
-          <div className="modal">
-            <h2>Nuevo Cliente</h2>
-            <div className="campo"><label>Nombre</label><input type="text" id="frmClienteNombre" className="inp" /></div>
-            <div className="campo"><label>Documento</label><input type="text" id="frmClienteDoc" className="inp" /></div>
-            <div className="campo"><label>Teléfono</label><input type="text" id="frmClienteTel" className="inp" /></div>
-            <div className="campo"><label>Dirección</label><input type="text" id="frmClienteDir" className="inp" /></div>
-            <div className="modal-btns">
-              <button className="btn btn-cancel" onClick={() => setModalCliente(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={() => {
-                const nombre = (document.getElementById('frmClienteNombre') as HTMLInputElement).value.trim()
-                if (!nombre) { setToast({ msg: 'Nombre obligatorio', err: true }); return }
-                crearCliente({
-                  nombre,
-                  documento: (document.getElementById('frmClienteDoc') as HTMLInputElement).value.trim(),
-                  telefono: (document.getElementById('frmClienteTel') as HTMLInputElement).value.trim(),
-                  direccion: (document.getElementById('frmClienteDir') as HTMLInputElement).value.trim(),
-                }).then(c => {
-                  setToast({ msg: 'Cliente creado' })
-                  setModalCliente(false)
-                  cargarDatos()
-                  setClienteId(String(c.id))
-                }).catch(err => setToast({ msg: err.message, err: true }))
-              }}>Guardar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Factura */}
       {modalFactura && (
         <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) setModalFactura(null) }}>
-          <div className="modal" style={{ maxWidth: '40rem' }}>
+          <div className="modal factura-modal">
             <h2>Factura #{modalFactura.id}</h2>
             <div className="factura-meta">
               <div className="factura-meta-row">
-                <span className="meta-item"><strong>Cliente:</strong> {modalFactura.cliente_nombre}</span>
+                <span className="meta-item"><strong>Nombre:</strong> {modalFactura.nombre_extra || '—'}</span>
                 <span className="meta-item"><strong>Fecha:</strong> {modalFactura.fecha}</span>
                 <span className="meta-item"><strong>Moneda:</strong> {modalFactura.moneda}</span>
                 <span className="meta-item"><strong>Status:</strong> {badge(modalFactura.status || 'en espera')}</span>
@@ -412,9 +543,7 @@ export default function Facturacion() {
               </tbody>
             </table>
             <div className="factura-totales">
-              <p>Subtotal: {modalFactura.moneda === 'VES' ? 'Bs ' : '$'}{fmt(modalFactura.subtotal)}</p>
-              {modalFactura.descuento > 0 && <p>Descuento: -{modalFactura.moneda === 'VES' ? 'Bs ' : '$'}{fmt(modalFactura.descuento)}</p>}
-              <p className="grande">{modalFactura.moneda === 'VES' ? 'Bs ' : '$'}{fmt(modalFactura.total)}</p>
+              <p className="grande">${fmt(modalFactura.total)}</p>
               {modalFactura.total_usd !== undefined && <p className="equiv">USD: ${fmt(modalFactura.total_usd, 2)}</p>}
               {modalFactura.total_ves !== undefined && <p className="equiv">VES: Bs {fmt(modalFactura.total_ves, 2)}</p>}
             </div>
@@ -436,7 +565,7 @@ export default function Facturacion() {
                         {metodosPago.map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
                       </select>
                     </div>
-                    <button className="btn btn-primary" onClick={guardarCambiosFactura}>Guardar Cambios</button>
+                    <button className="btn btn-primary" onClick={guardarCambiosFactura}>Guardar</button>
                   </div>
                 </div>
               </div>
@@ -449,7 +578,31 @@ export default function Facturacion() {
         </div>
       )}
 
-      {/* Consultar productos modal */}
+      {modalCierre && cierreResultado && (
+        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) { setModalCierre(false); setCierreResultado(null) } }}>
+          <div className="modal" style={{ maxWidth: '32rem' }}>
+            <h2>Cierre de Caja #{cierreResultado.id}</h2>
+            <div style={{ fontSize: '.8125rem', color: '#94a3b8', marginBottom: '.75rem' }}>
+              <p>Desde: {cierreResultado.fecha_inicio}</p>
+              <p>Hasta: {cierreResultado.fecha_fin}</p>
+            </div>
+            <div className="cierre-kpis" style={{ marginBottom: '.75rem' }}>
+              <div className="cierre-kpi">
+                <span className="cierre-kpi-val">{cierreResultado.cantidad_facturas}</span>
+                <span className="cierre-kpi-label">Facturas</span>
+              </div>
+              <div className="cierre-kpi">
+                <span className="cierre-kpi-val" style={{ color: '#34d399' }}>${fmt(cierreResultado.total_ventas)}</span>
+                <span className="cierre-kpi-label">Total</span>
+              </div>
+            </div>
+            <div className="modal-btns">
+              <button className="btn btn-primary" onClick={() => { setModalCierre(false); setCierreResultado(null) }}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {consultarOpen && (
         <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) { setConsultarOpen(false); setConsSearch('') } }}>
           <div className="modal" style={{ maxWidth: '44rem', padding: '.75rem .875rem .875rem' }}>
@@ -470,11 +623,9 @@ export default function Facturacion() {
                   ) : consFiltrados.map(p => (
                     <tr key={p.id} style={{ cursor: 'pointer' }}
                       onClick={() => {
-                        setSelectedProd(p)
-                        setSearch(p.p)
+                        agregarProducto(p, 1)
                         setConsultarOpen(false)
                         setConsSearch('')
-                        searchRef.current?.focus()
                       }}>
                       <td>{p.p}</td>
                       <td style={{ color: '#64748b', fontSize: '.8125rem' }}>{p.m || ''}</td>
@@ -490,7 +641,6 @@ export default function Facturacion() {
         </div>
       )}
 
-      {/* Ayuda modal */}
       {helpOpen && (
         <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) setHelpOpen(false) }}>
           <div className="modal" style={{ maxWidth: '26rem' }}>
@@ -499,18 +649,16 @@ export default function Facturacion() {
               <tbody>
                 {[
                   ['F1', 'Mostrar esta ayuda'],
-                  ['F2', 'Enfocar cliente'],
-                  ['F3', 'Enfocar búsqueda de productos'],
-                  ['F4', 'Enfocar selector de moneda'],
-                  ['F5', 'Enfocar descuento'],
+                  ['F3', 'Enfocar búsqueda / escáner'],
                   ['F6', 'Nueva factura (limpiar)'],
+                  ['F7', 'Cerrar caja'],
                   ['↑ ↓', 'Navegar sugerencias'],
-                  ['Enter', 'Agregar producto seleccionado'],
+                  ['Enter', 'Agregar producto'],
                   ['Ctrl+Enter', 'Generar factura'],
                   ['Ctrl+N', 'Nueva factura'],
                   ['Esc', 'Cerrar modal / limpiar búsqueda'],
                 ].map(([key, desc]) => (
-                  <tr key={key}>
+                  <tr key={key as string}>
                     <td style={{ padding: '.3rem .5rem', borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap', width: '7rem' }}>
                       <kbd style={{ background: '#1e293b', color: '#94a3b8', padding: '.1rem .4rem', borderRadius: '.2rem', border: '1px solid #334155', fontSize: '.6875rem', fontFamily: 'inherit' }}>{key}</kbd>
                     </td>

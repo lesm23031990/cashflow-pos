@@ -9,6 +9,7 @@ const authRouter = require('./routes/auth');
 const clientesRouter = require('./routes/clientes');
 const facturasRouter = require('./routes/facturas');
 const metodosPagoRouter = require('./routes/metodos_pago');
+const cierresCajaRouter = require('./routes/cierres_caja');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/tasas', verificarToken, tasasRouter);
 app.use('/api/clientes', verificarToken, clientesRouter);
 app.use('/api/facturas', verificarToken, facturasRouter);
 app.use('/api/metodos-pago', verificarToken, metodosPagoRouter);
+app.use('/api/cierres-caja', verificarToken, cierresCajaRouter);
 
 // SPA - Admin (React build en public/admin/)
 app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')));
