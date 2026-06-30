@@ -32,12 +32,7 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'public', 'admin')))
 app.get('/admin/*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin', 'index.html'));
 });
-app.get('/facturacion', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'facturacion', 'index.html'));
-});
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard', 'index.html'));
-});
+
 
 // Inicializar base de datos
 async function inicializar() {
