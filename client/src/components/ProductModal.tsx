@@ -44,7 +44,7 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
     if (elapsed < 50) {
       if (!isScanningBarcode.current) {
         isScanningBarcode.current = true
-        setB(e.target.value.slice(-1))
+        setB(e.target.value)
       } else {
         setB(e.target.value)
       }

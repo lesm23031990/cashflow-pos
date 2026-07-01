@@ -134,7 +134,7 @@ function AdminPage() {
     if (elapsed < 50) {
       if (!isScanning.current) {
         isScanning.current = true
-        setSearchInput(e.target.value.slice(-1))
+        setSearchInput(e.target.value)
       } else {
         setSearchInput(e.target.value)
       }
@@ -150,7 +150,7 @@ function AdminPage() {
 
   function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
-      const val = searchInput.trim()
+      const val = (e.currentTarget.value || '').trim()
       if (!val) return
       if (isScanning.current) {
         isScanning.current = false
@@ -240,7 +240,9 @@ function AdminPage() {
       )}
 
       {productoDetalle && (
-        <ProductDetailModal producto={productoDetalle} tasas={tasas} onClose={() => setProductoDetalle(null)} />
+        <ProductDetailModal producto={productoDetalle} tasas={tasas}
+          onClose={() => setProductoDetalle(null)}
+          onSave={(id, data) => actualizarProducto(id, data).then(p => { setProductoDetalle(p); cargar(); showToast('Producto actualizado') })} />
       )}
 
       <hr className="sep" style={{ border: 'none', borderTop: '1px solid #1e293b', margin: '1.5rem 0' }} />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Producto, MetodoPago, Factura, FacturaDetalle, ResumenCierreResponse, CierreCaja } from '../types'
 import {
   getProductos, getFacturas, getFactura, getMetodosPago,
@@ -56,9 +56,8 @@ export default function Facturacion() {
 
   const searchRef = useRef<HTMLInputElement>(null)
   const recibidoRef = useRef<HTMLInputElement>(null)
-
-  const lastScan = useRef(0)
-  const scanBuf = useRef('')
+  const lastKeyTime = useRef(0)
+  const scanTimer = useRef<ReturnType<typeof setTimeout>>()
 
   const totalCOP = detalles.reduce((s, d) => s + d.subtotal, 0)
   const totalUSD = tasas && tasas.usd > 0 ? totalCOP / tasas.usd : 0
@@ -152,17 +151,35 @@ export default function Facturacion() {
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value
     const now = Date.now()
-    scanBuf.current = val
-    lastScan.current = now
+    const elapsed = now - lastKeyTime.current
+    lastKeyTime.current = now
+
+    if (scanTimer.current) clearTimeout(scanTimer.current)
+
     setSearch(val)
     setSuggestIdx(-1)
+
+    if (elapsed > 0 && elapsed < 50) {
+      scanTimer.current = setTimeout(() => {
+        scanTimer.current = undefined
+        const codigo = searchRef.current?.value || ''
+        if (codigo.length < 4) return
+        const prod = productos.find(p => p.b === codigo)
+        if (prod) {
+          agregarProducto(prod, 1)
+        } else {
+          buscarBarcode(codigo)
+        }
+      }, 180)
+    }
   }
 
   function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') { e.preventDefault(); setSuggestIdx(i => Math.min(i + 1, searchResults.length - 1)) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setSuggestIdx(i => Math.max(i - 1, -1)) }
     else if (e.key === 'Enter') {
-      const val = search.trim()
+      if (scanTimer.current) clearTimeout(scanTimer.current)
+      const val = (e.currentTarget.value || '').trim()
       if (!val) return
       if (suggestIdx >= 0 && searchResults[suggestIdx]) {
         agregarProducto(searchResults[suggestIdx], 1)
