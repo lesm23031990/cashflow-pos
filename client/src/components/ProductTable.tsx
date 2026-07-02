@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import type { Producto } from '../types'
+
+type Tab = 'disponibles' | 'no_disponibles'
 
 interface Props {
   productos: Producto[]
@@ -6,6 +9,7 @@ interface Props {
   filtro: string
   onEdit: (idx: number) => void
   onDelete: (idx: number) => void
+  onToggleStock: (idx: number) => void
 }
 
 function esc(s: string) {
@@ -14,43 +18,48 @@ function esc(s: string) {
   return d.innerHTML
 }
 
-export default function ProductTable({ productos, tasas, filtro, onEdit, onDelete }: Props) {
+export default function ProductTable({ productos, tasas, filtro, onEdit, onDelete, onToggleStock }: Props) {
+  const [tab, setTab] = useState<Tab>('disponibles')
   const usd = tasas?.usd ?? 0
   const ves = tasas?.ves ?? 0
 
+  const disponibles = productos.filter(p => p.s > 0)
+  const noDisponibles = productos.filter(p => p.s === 0)
+
+  const filtrados = tab === 'disponibles' ? disponibles : noDisponibles
+
   const lista = filtro
-    ? productos.filter(item => {
+    ? filtrados.filter(item => {
         const txt = (item.p + ' ' + (item.m || '') + ' ' + (item.c || '') + ' ' + (item.b || '')).toLowerCase()
         return txt.includes(filtro.toLowerCase())
       })
-    : productos
+    : filtrados
 
-  if (lista.length === 0) {
-    return (
-      <>
+  function renderTable() {
+    if (lista.length === 0) {
+      return (
         <table>
           <thead>
             <tr>
               <th>Producto</th><th>Código</th><th>Marca</th><th>Categoría</th>
+              <th className="num">Stock</th>
               <th className="num">COP</th><th className="num">USD</th><th className="num">VES</th>
               <th className="acciones-th">Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colSpan={8} className="vacio">No hay productos</td></tr>
+            <tr><td colSpan={9} className="vacio">No hay productos</td></tr>
           </tbody>
         </table>
-        <p className="total"><span>{productos.length}</span> productos</p>
-      </>
-    )
-  }
+      )
+    }
 
-  return (
-    <>
+    return (
       <table>
         <thead>
           <tr>
             <th>Producto</th><th>Código</th><th>Marca</th><th>Categoría</th>
+            <th className="num">Stock</th>
             <th className="num">COP</th><th className="num">USD</th><th className="num">VES</th>
             <th className="acciones-th">Acción</th>
           </tr>
@@ -61,14 +70,18 @@ export default function ProductTable({ productos, tasas, filtro, onEdit, onDelet
             const cop = item.v
             const usdVal = usd > 0 ? cop / usd : 0
             const vesVal = ves > 0 ? cop / ves : 0
+            const stockClass = item.s === 0 ? 'stock-cero' : 'stock-ok'
             return (
-              <tr key={item.id}>
+              <tr key={item.id} className={item.s === 0 ? 'row-sin-stock' : ''}>
                 <td>{esc(item.p)}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: item.b ? '#fbbf24' : '#475569' }}>
                   {item.b || '—'}
                 </td>
                 <td>{esc(item.m || '')}</td>
                 <td>{esc(item.c || '')}</td>
+                <td className={`num ${stockClass}`} style={{ cursor: 'pointer' }} onClick={() => onToggleStock(idx)} title={item.s > 0 ? 'Cambiar a Sin existencia' : 'Cambiar a Disponible'}>
+                  {item.s > 0 ? 'DISPONIBLE' : 'SIN EXISTENCIA'}
+                </td>
                 <td className="num precio-cop">${Number(cop).toLocaleString('es-CO')}</td>
                 <td className="num precio-usd">${Number(usdVal).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="num precio-ves">Bs {Number(vesVal).toLocaleString('es-CO', { maximumFractionDigits: 2 })}</td>
@@ -81,7 +94,23 @@ export default function ProductTable({ productos, tasas, filtro, onEdit, onDelet
           })}
         </tbody>
       </table>
-      <p className="total"><span>{productos.length}</span> productos</p>
+    )
+  }
+
+  return (
+    <>
+      <div className="tabs">
+        <button className={`tab ${tab === 'disponibles' ? 'activo' : ''}`} onClick={() => setTab('disponibles')}>
+          Disponibles <span className="tab-count">{disponibles.length}</span>
+        </button>
+        <button className={`tab ${tab === 'no_disponibles' ? 'activo' : ''}`} onClick={() => setTab('no_disponibles')}>
+          No disponibles <span className="tab-count">{noDisponibles.length}</span>
+        </button>
+      </div>
+      {renderTable()}
+      <p className="total">
+        <span>{lista.length}</span> productos
+      </p>
     </>
   )
 }

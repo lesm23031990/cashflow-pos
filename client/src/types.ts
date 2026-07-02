@@ -5,6 +5,7 @@ export interface Producto {
   v: number
   m: string
   c: string
+  s: number
 }
 
 export interface Tasas {

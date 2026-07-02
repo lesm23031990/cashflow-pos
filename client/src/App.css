@@ -221,6 +221,27 @@ tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .metodos-list .btn-del-met:hover { color: #f87171; }
 .metodos-list .btn-edit-met { background: none; border: none; color: #06b6d4; cursor: pointer; font-size: .75rem; padding: 0 .15rem; line-height: 1; }
 
+/* ── Tabs ──────────────────────────────────────── */
+.tabs { display: flex; gap: .25rem; margin-bottom: .75rem; }
+.tab {
+  background: #131c2e; border: 1px solid #1e293b; border-radius: .375rem;
+  color: #94a3b8; padding: .4rem .85rem; font-size: .8125rem; cursor: pointer;
+  font-family: inherit; transition: .15s; display: inline-flex; align-items: center; gap: .35rem;
+}
+.tab:hover { border-color: #06b6d4; color: #e2e8f0; }
+.tab.activo { background: #06b6d4; color: #0f172a; border-color: #06b6d4; font-weight: 600; }
+.tab-count {
+  background: rgba(0,0,0,0.2); border-radius: 1rem; padding: .05rem .45rem;
+  font-size: .6875rem; font-weight: 600;
+}
+.tab.activo .tab-count { background: rgba(0,0,0,0.15); }
+
+.stock-ok { color: #34d399; font-weight: 600; cursor: pointer; }
+.stock-ok:hover { text-decoration: underline; }
+.stock-cero { color: #ef4444; font-weight: 600; cursor: pointer; }
+.stock-cero:hover { text-decoration: underline; }
+.row-sin-stock { opacity: 0.6; }
+
 /* ── Select / Input gen�rico ──────────────────── */
 .sel { background: #0b1120; color: #e2e8f0; border: 1px solid #1e293b; border-radius: .4rem; padding: .5rem .7rem; font-size: .875rem; width: 100%; outline: none; }
 .sel:focus { border-color: #06b6d4; }

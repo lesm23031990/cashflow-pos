@@ -2,9 +2,10 @@ import { useState } from 'react'
 import type { Producto, Tasas } from '../types'
 
 const CATEGORIAS = [
-  'Cervezas y Bebidas', 'Lácteos y Bebidas', 'Chocolates y Dulces',
-  'Sangría y Licores', 'Refrescos y Aguas', 'Snacks y Varios',
-  'Víveres', 'Medicamentos', 'Venezolano', 'Colombiano', 'Otra',
+  'CERVECERIA Y BEBIDAS', 'LACTEOS Y BEBIDAS', 'CHOCOLATES Y DULCES',
+  'SANGRIA Y LICORES', 'REFRESCOS Y AGUAS', 'SNACKS Y VARIOS',
+  'VIVERES', 'MEDICAMENTOS', 'VENEZOLANO', 'COLOMBIANO',
+  'HAMBURGUESERIA', 'PIZZERIA', 'OTRA',
 ]
 
 interface Props {
@@ -21,6 +22,7 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
   const [marca, setMarca] = useState(producto.m)
   const [categoria, setCategoria] = useState(producto.c || 'Otra')
   const [precio, setPrecio] = useState(String(producto.v))
+  const [stock, setStock] = useState(String(producto.s))
   const [guardando, setGuardando] = useState(false)
 
   const usd = tasas && tasas.usd > 0 ? producto.v / tasas.usd : 0
@@ -32,11 +34,13 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
     setMarca(producto.m)
     setCategoria(producto.c || 'Otra')
     setPrecio(String(producto.v))
+    setStock(String(producto.s))
     setEditando(false)
   }
 
   function guardar() {
     const p = parseFloat(precio)
+    const s = parseInt(stock) || 0
     if (!nombre.trim() || !p || p <= 0) return
     setGuardando(true)
     onSave(producto.id, {
@@ -45,6 +49,7 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
       m: marca.trim() || 'Genérico',
       c: categoria,
       v: p,
+      s,
     }).then(() => {
       setEditando(false)
       setGuardando(false)
@@ -80,6 +85,10 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
                 <label>Precio COP ($)</label>
                 <input type="number" step="1" min="0" value={precio} onChange={e => setPrecio(e.target.value)} placeholder="Ej: 6000" />
               </div>
+              <div className="campo">
+                <label>Stock</label>
+                <input type="number" step="1" min="0" value={stock} onChange={e => setStock(e.target.value)} placeholder="0" />
+              </div>
             </>
           ) : (
             <>
@@ -98,6 +107,10 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
               <div className="detail-field">
                 <span className="detail-label">Categoría</span>
                 <span className="detail-value">{producto.c || '—'}</span>
+              </div>
+              <div className="detail-field">
+                <span className="detail-label">Stock</span>
+                <span className="detail-value" style={{ color: producto.s > 0 ? '#34d399' : '#ef4444' }}>{producto.s > 0 ? producto.s : 'Sin existencia'}</span>
               </div>
               <div className="detail-field">
                 <span className="detail-label">Precio COP</span>

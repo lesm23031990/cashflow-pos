@@ -63,6 +63,7 @@ export function crearProducto(data: Partial<Producto>): Promise<Producto> {
       precio_cop: data.v,
       marca: data.m || '',
       categoria: data.c || '',
+      stock: data.s ?? 0,
     }),
   })
 }
@@ -76,6 +77,7 @@ export function actualizarProducto(id: number, data: Partial<Producto>): Promise
       precio_cop: data.v,
       marca: data.m,
       categoria: data.c,
+      stock: data.s,
     }),
   })
 }

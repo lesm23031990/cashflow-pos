@@ -187,6 +187,17 @@ function AdminPage() {
       .catch((err: Error) => showToast(err.message, true))
   }
 
+  function handleToggleStock(idx: number) {
+    const item = productos[idx]
+    const nuevoStock = item.s > 0 ? 0 : 1
+    actualizarProducto(item.id, { s: nuevoStock })
+      .then(() => {
+        showToast(item.s > 0 ? 'Marcado como Sin existencia' : 'Marcado como Disponible')
+        cargar()
+      })
+      .catch((err: Error) => showToast(err.message, true))
+  }
+
   function handleExport() {
     exportarProductos()
       .then(data => {
@@ -233,7 +244,7 @@ function AdminPage() {
         <button className="btn btn-danger" onClick={handleExport}>Exportar</button>
       </div>
 
-      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} />
+      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} onToggleStock={handleToggleStock} />
 
       {modalOpen && (
         <ProductModal producto={editando} onSave={handleSave} onClose={() => { setModalOpen(false); setEditando(null) }} />

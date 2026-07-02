@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import type { Producto } from '../types'
 
 const CATEGORIAS = [
-  'Cervezas y Bebidas', 'Lácteos y Bebidas', 'Chocolates y Dulces',
-  'Sangría y Licores', 'Refrescos y Aguas', 'Snacks y Varios',
-  'Víveres', 'Medicamentos', 'Venezolano', 'Colombiano', 'Otra',
+  'CERVECERIA Y BEBIDAS', 'LACTEOS Y BEBIDAS', 'CHOCOLATES Y DULCES',
+  'SANGRIA Y LICORES', 'REFRESCOS Y AGUAS', 'SNACKS Y VARIOS',
+  'VIVERES', 'MEDICAMENTOS', 'VENEZOLANO', 'COLOMBIANO',
+  'HAMBURGUESERIA', 'PIZZERIA', 'OTRA',
 ]
 
 interface Props {
@@ -19,6 +20,7 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
   const [m, setM] = useState('')
   const [c, setC] = useState('Otra')
   const [v, setV] = useState('')
+  const [s, setS] = useState('')
   const [saving, setSaving] = useState(false)
 
   const lastBarcodeTime = useRef(0)
@@ -31,8 +33,9 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
       setM(producto.m || '')
       setC(producto.c || 'Otra')
       setV(producto.v != null ? String(producto.v) : '')
+      setS(producto.s != null ? String(producto.s) : '0')
     } else {
-      setP(''); setB(''); setM(''); setC('Otra'); setV('')
+      setP(''); setB(''); setM(''); setC('Otra'); setV(''); setS('0')
     }
   }, [producto])
 
@@ -57,9 +60,10 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
   function handleSubmit() {
     if (!p.trim()) return
     const val = parseFloat(v)
+    const stockVal = parseInt(s) || 0
     if (!val || val <= 0) return
     setSaving(true)
-    onSave({ p: p.trim(), b: b.trim(), m: m.trim() || 'Genérico', c, v: val })
+    onSave({ p: p.trim(), b: b.trim(), m: m.trim() || 'Genérico', c, v: val, s: stockVal })
   }
 
   return (
@@ -87,6 +91,10 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
         <div className="campo">
           <label htmlFor="frmPrecio">Precio (COP $)</label>
           <input id="frmPrecio" type="number" step="1" min="0" value={v} onChange={e => setV(e.target.value)} placeholder="Ej: 6000" />
+        </div>
+        <div className="campo">
+          <label htmlFor="frmStock">Stock</label>
+          <input id="frmStock" type="number" step="1" min="0" value={s} onChange={e => setS(e.target.value)} placeholder="0" />
         </div>
         <div className="modal-btns">
           <button className="btn btn-cancel" onClick={onClose} disabled={saving}>Cancelar</button>
