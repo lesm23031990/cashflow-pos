@@ -8,6 +8,12 @@ const CATEGORIAS = [
   'HAMBURGUESERIA', 'PIZZERIA', 'OTRA',
 ]
 
+const ESTADOS = [
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'no_disponible', label: 'No disponible' },
+  { value: 'por_revisar', label: 'Por revisar' },
+]
+
 interface Props {
   producto: Producto
   tasas: Tasas | null
@@ -23,10 +29,17 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
   const [categoria, setCategoria] = useState(producto.c || 'Otra')
   const [precio, setPrecio] = useState(String(producto.v))
   const [stock, setStock] = useState(String(producto.s))
+  const [estado, setEstado] = useState(producto.st || 'disponible')
   const [guardando, setGuardando] = useState(false)
 
   const usd = tasas && tasas.usd > 0 ? producto.v / tasas.usd : 0
   const ves = tasas && tasas.ves > 0 ? producto.v / tasas.ves : 0
+
+  const ESTADO_LABELS: Record<string, string> = {
+    disponible: 'Disponible',
+    no_disponible: 'No disponible',
+    por_revisar: 'Por revisar',
+  }
 
   function cancelarEdicion() {
     setNombre(producto.p)
@@ -35,21 +48,24 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
     setCategoria(producto.c || 'Otra')
     setPrecio(String(producto.v))
     setStock(String(producto.s))
+    setEstado(producto.st || 'disponible')
     setEditando(false)
   }
 
   function guardar() {
     const p = parseFloat(precio)
     const s = parseInt(stock) || 0
-    if (!nombre.trim() || !p || p <= 0) return
+    if (!nombre.trim()) return
+    const precioVal = isNaN(p) ? 0 : p
     setGuardando(true)
     onSave(producto.id, {
       p: nombre.trim(),
       b: codigo.trim(),
       m: marca.trim() || 'Genérico',
       c: categoria,
-      v: p,
+      v: precioVal,
       s,
+      st: estado,
     }).then(() => {
       setEditando(false)
       setGuardando(false)
@@ -89,6 +105,12 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
                 <label>Stock</label>
                 <input type="number" step="1" min="0" value={stock} onChange={e => setStock(e.target.value)} placeholder="0" />
               </div>
+              <div className="campo">
+                <label>Estado</label>
+                <select value={estado} onChange={e => setEstado(e.target.value)}>
+                  {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+                </select>
+              </div>
             </>
           ) : (
             <>
@@ -113,6 +135,10 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
                 <span className="detail-value" style={{ color: producto.s > 0 ? '#34d399' : '#ef4444' }}>{producto.s > 0 ? producto.s : 'Sin existencia'}</span>
               </div>
               <div className="detail-field">
+                <span className="detail-label">Estado</span>
+                <span className="detail-value" style={{ color: producto.st === 'disponible' ? '#34d399' : producto.st === 'por_revisar' ? '#fbbf24' : '#ef4444' }}>{ESTADO_LABELS[producto.st] || producto.st}</span>
+              </div>
+              <div className="detail-field">
                 <span className="detail-label">Precio COP</span>
                 <span className="detail-value precio-cop">${producto.v.toLocaleString('es-CO')}</span>
               </div>
@@ -131,7 +157,7 @@ export default function ProductDetailModal({ producto, tasas, onClose, onSave }:
           {editando ? (
             <>
               <button className="btn btn-cancel" onClick={cancelarEdicion} disabled={guardando}>Cancelar</button>
-              <button className="btn btn-primary" onClick={guardar} disabled={guardando || !nombre.trim() || !precio || parseFloat(precio) <= 0}>
+              <button className="btn btn-primary" onClick={guardar} disabled={guardando || !nombre.trim()}>
                 {guardando ? 'Guardando...' : 'Guardar'}
               </button>
             </>

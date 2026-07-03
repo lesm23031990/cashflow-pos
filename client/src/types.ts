@@ -6,6 +6,7 @@ export interface Producto {
   m: string
   c: string
   s: number
+  st: string
 }
 
 export interface Tasas {

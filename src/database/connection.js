@@ -35,7 +35,8 @@ async function conectar() {
       precio_cop REAL NOT NULL,
       marca TEXT DEFAULT '',
       categoria TEXT DEFAULT '',
-      stock INTEGER DEFAULT 1
+      stock INTEGER DEFAULT 1,
+      estado TEXT DEFAULT 'disponible'
     )
   `);
 
@@ -128,6 +129,7 @@ async function conectar() {
   try { db.run("ALTER TABLE productos ADD COLUMN marca TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE productos ADD COLUMN categoria TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE productos ADD COLUMN stock INTEGER DEFAULT 0"); } catch(e) {}
+  try { db.run("ALTER TABLE productos ADD COLUMN estado TEXT DEFAULT 'disponible'"); } catch(e) {}
 
   guardar();
   return db;

@@ -64,6 +64,7 @@ export function crearProducto(data: Partial<Producto>): Promise<Producto> {
       marca: data.m || '',
       categoria: data.c || '',
       stock: data.s ?? 0,
+      estado: data.st ?? 'disponible',
     }),
   })
 }
@@ -78,6 +79,7 @@ export function actualizarProducto(id: number, data: Partial<Producto>): Promise
       marca: data.m,
       categoria: data.c,
       stock: data.s,
+      estado: data.st,
     }),
   })
 }

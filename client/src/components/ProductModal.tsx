@@ -8,6 +8,12 @@ const CATEGORIAS = [
   'HAMBURGUESERIA', 'PIZZERIA', 'OTRA',
 ]
 
+const ESTADOS = [
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'no_disponible', label: 'No disponible' },
+  { value: 'por_revisar', label: 'Por revisar' },
+]
+
 interface Props {
   producto: Partial<Producto> | null
   onSave: (data: Partial<Producto>) => void
@@ -21,6 +27,7 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
   const [c, setC] = useState('Otra')
   const [v, setV] = useState('')
   const [s, setS] = useState('')
+  const [st, setSt] = useState('disponible')
   const [saving, setSaving] = useState(false)
 
   const lastBarcodeTime = useRef(0)
@@ -34,8 +41,9 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
       setC(producto.c || 'Otra')
       setV(producto.v != null ? String(producto.v) : '')
       setS(producto.s != null ? String(producto.s) : '0')
+      setSt(producto.st || 'disponible')
     } else {
-      setP(''); setB(''); setM(''); setC('Otra'); setV(''); setS('0')
+      setP(''); setB(''); setM(''); setC('Otra'); setV(''); setS('0'); setSt('disponible')
     }
   }, [producto])
 
@@ -61,9 +69,9 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
     if (!p.trim()) return
     const val = parseFloat(v)
     const stockVal = parseInt(s) || 0
-    if (!val || val <= 0) return
+    const precioVal = isNaN(val) ? 0 : val
     setSaving(true)
-    onSave({ p: p.trim(), b: b.trim(), m: m.trim() || 'Genérico', c, v: val, s: stockVal })
+    onSave({ p: p.trim(), b: b.trim(), m: m.trim() || 'Genérico', c, v: precioVal, s: stockVal, st })
   }
 
   return (
@@ -96,9 +104,15 @@ export default function ProductModal({ producto, onSave, onClose }: Props) {
           <label htmlFor="frmStock">Stock</label>
           <input id="frmStock" type="number" step="1" min="0" value={s} onChange={e => setS(e.target.value)} placeholder="0" />
         </div>
+        <div className="campo">
+          <label htmlFor="frmEstado">Estado</label>
+          <select id="frmEstado" value={st} onChange={e => setSt(e.target.value)}>
+            {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+          </select>
+        </div>
         <div className="modal-btns">
           <button className="btn btn-cancel" onClick={onClose} disabled={saving}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSubmit} disabled={saving || !p.trim() || !v || parseFloat(v) <= 0}>
+          <button className="btn btn-primary" onClick={handleSubmit} disabled={saving || !p.trim()}>
             {saving ? 'Guardando...' : producto?.id ? 'Actualizar' : 'Guardar'}
           </button>
         </div>

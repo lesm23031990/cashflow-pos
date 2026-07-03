@@ -187,12 +187,16 @@ function AdminPage() {
       .catch((err: Error) => showToast(err.message, true))
   }
 
-  function handleToggleStock(idx: number) {
+  function handleToggleEstado(idx: number) {
     const item = productos[idx]
-    const nuevoStock = item.s > 0 ? 0 : 1
-    actualizarProducto(item.id, { s: nuevoStock })
+    const orden = ['disponible', 'no_disponible', 'por_revisar']
+    const actual = item.st || 'disponible'
+    const idxActual = orden.indexOf(actual)
+    const nuevoEstado = orden[(idxActual + 1) % orden.length]
+    const labels: Record<string, string> = { disponible: 'Disponible', no_disponible: 'No disponible', por_revisar: 'Por revisar' }
+    actualizarProducto(item.id, { st: nuevoEstado })
       .then(() => {
-        showToast(item.s > 0 ? 'Marcado como Sin existencia' : 'Marcado como Disponible')
+        showToast(`Estado cambiado a: ${labels[nuevoEstado]}`)
         cargar()
       })
       .catch((err: Error) => showToast(err.message, true))
@@ -244,7 +248,7 @@ function AdminPage() {
         <button className="btn btn-danger" onClick={handleExport}>Exportar</button>
       </div>
 
-      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} onToggleStock={handleToggleStock} />
+      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} onToggleEstado={handleToggleEstado} />
 
       {modalOpen && (
         <ProductModal producto={editando} onSave={handleSave} onClose={() => { setModalOpen(false); setEditando(null) }} />
