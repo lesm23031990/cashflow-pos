@@ -1,4 +1,4 @@
-const { conectar, guardar, consultar, ejecutar, hashPassword } = require('./connection');
+const { conectar, consultar, ejecutar, hashPassword } = require('./connection');
 
 const PRODUCTOS = [
   ["Lata Grande", 3500, "Gen\u00e9rico", "Cervezas y Bebidas"],

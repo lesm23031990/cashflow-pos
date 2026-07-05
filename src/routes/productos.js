@@ -81,6 +81,9 @@ router.put('/:id', (req, res) => {
   const updated = primero(
     'SELECT id, nombre, codigo_barras, precio_cop, marca, categoria, stock, estado FROM productos WHERE id = ?', [id]
   );
+  if (!updated) {
+    return res.status(500).json({ error: 'Error al recuperar el producto actualizado' });
+  }
   res.json({
     id: updated.id, p: updated.nombre, b: updated.codigo_barras || '', v: updated.precio_cop,
     m: updated.marca || '', c: updated.categoria || '', s: updated.stock || 0, st: updated.estado || 'disponible'
