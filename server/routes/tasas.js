@@ -1,10 +1,10 @@
-const { Router } = require('express');
+﻿const { Router } = require('express');
 const { primero, ejecutar } = require('../database/connection');
 
 const router = Router();
 
 router.get('/', (req, res) => {
-  const row = primero('SELECT usd, ves FROM tasas WHERE id = 1') || { usd: 3500, ves: 4.70 };
+  const row = primero('SELECT usd, ves FROM tasas WHERE id = 1');
   res.json({ usd: row.usd, ves: row.ves });
 });
 

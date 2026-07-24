@@ -69,17 +69,17 @@ export function crearProducto(data: Partial<Producto>): Promise<Producto> {
   })
 }
 
-export function actualizarProducto(id: number, data: Partial<Producto>): Promise<Producto> {
+export function actualizarProducto(id: number, data: Partial<Producto> | Record<string, string | number | undefined>): Promise<Producto> {
   return request('/productos/' + id, {
     method: 'PUT',
     body: JSON.stringify({
-      nombre: data.p,
-      codigo_barras: data.b,
-      precio_cop: data.v,
-      marca: data.m,
-      categoria: data.c,
-      stock: data.s,
-      estado: data.st,
+      nombre: (data as any).p ?? (data as any).nombre,
+      codigo_barras: (data as any).b ?? (data as any).codigo_barras,
+      precio_cop: (data as any).v ?? (data as any).precio_cop,
+      marca: (data as any).m ?? (data as any).marca,
+      categoria: (data as any).c ?? (data as any).categoria,
+      stock: (data as any).s ?? (data as any).stock,
+      estado: (data as any).st ?? (data as any).estado,
     }),
   })
 }
@@ -90,6 +90,20 @@ export function eliminarProducto(id: number): Promise<void> {
 
 export function exportarProductos(): Promise<Producto[]> {
   return request('/productos/exportar')
+}
+
+export function analizarFacturaOCR(imagenBase64: string): Promise<{ ok: boolean; items: any[]; texto_extraido: string }> {
+  return request('/ocr', {
+    method: 'POST',
+    body: JSON.stringify({ imagen: imagenBase64 }),
+  })
+}
+
+export function actualizarProductoMasivo(items: { nombre?: string; marca?: string; precio_cop?: number; codigo_barras?: string; categoria?: string }[]): Promise<{ ok: boolean; resultados: any[] }> {
+  return request('/productos/actualizar-masivo', {
+    method: 'POST',
+    body: JSON.stringify(items),
+  })
 }
 
 export function getTasas(): Promise<Tasas> {

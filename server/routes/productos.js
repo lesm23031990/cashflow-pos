@@ -106,6 +106,47 @@ router.get('/exportar', (req, res) => {
   })));
 });
 
+router.post('/actualizar-masivo', (req, res) => {
+  const items = req.body;
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: 'Se espera un array de productos' });
+  }
+  const resultados = [];
+  for (const item of items) {
+    const nombre = item.nombre || item.p || '';
+    const marca = item.marca || item.m || '';
+    const precio = item.precio_cop ?? item.v ?? 0;
+    const codigo = item.codigo_barras || item.b || '';
+    const categoria = item.categoria || item.c || '';
+
+    if (!nombre) { resultados.push({ error: 'Nombre requerido' }); continue; }
+
+    if (item.id) {
+      const existe = primero('SELECT id FROM productos WHERE id = ?', [item.id]);
+      if (existe) {
+        ejecutar('UPDATE productos SET nombre = ?, precio_cop = ?, marca = ?, categoria = ?, codigo_barras = ? WHERE id = ?',
+          [nombre, precio, marca, categoria, codigo, item.id]);
+        resultados.push({ id: item.id, actualizado: true });
+      } else {
+        resultados.push({ error: `Producto id ${item.id} no encontrado` });
+      }
+    } else {
+      const existente = primero('SELECT id FROM productos WHERE nombre = ? AND marca = ?', [nombre, marca]);
+      if (existente) {
+        ejecutar('UPDATE productos SET precio_cop = ?, codigo_barras = ?, categoria = ? WHERE id = ?',
+          [precio, codigo, categoria, existente.id]);
+        resultados.push({ id: existente.id, actualizado: true });
+      } else {
+        ejecutar('INSERT INTO productos (nombre, codigo_barras, precio_cop, marca, categoria) VALUES (?, ?, ?, ?, ?)',
+          [nombre, codigo, precio, marca, categoria]);
+        const row = primero('SELECT MAX(id) AS id FROM productos');
+        resultados.push({ id: row.id, creado: true });
+      }
+    }
+  }
+  res.json({ ok: true, resultados });
+});
+
 router.post('/importar', (req, res) => {
   const data = req.body;
   if (!Array.isArray(data)) {

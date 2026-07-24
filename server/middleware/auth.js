@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+﻿const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'precios-caja-secret-key-2024';
 
@@ -16,7 +16,7 @@ function verificarToken(req, res, next) {
     req.usuario = jwt.verify(token, JWT_SECRET);
     next();
   } catch {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    return res.status(401).json({ error: 'Token inv├ílido o expirado' });
   }
 }
 
