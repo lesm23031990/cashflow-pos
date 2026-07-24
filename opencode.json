@@ -1,0 +1,48 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "github": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "enabled": true,
+      "env": {
+        "GITHUB_TOKEN": "{env:GITHUB_TOKEN}"
+      }
+    }
+  },
+  "agent": {
+    "backend-engineer": {
+      "description": "Implementa APIs, rutas, DB y lógica backend en Express para Cashflow POS",
+      "mode": "subagent",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "frontend-engineer": {
+      "description": "Implementa componentes React/TypeScript y estilos para Cashflow POS",
+      "mode": "subagent",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "spec-engineer": {
+      "description": "Escribe y refina specs en formato markdown siguiendo SDD",
+      "mode": "subagent",
+      "permission": {
+        "edit": "allow",
+        "bash": "deny"
+      }
+    },
+    "code-reviewer": {
+      "description": "Revisa código en busca de errores, seguridad y buenas prácticas",
+      "mode": "subagent",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny"
+      }
+    }
+  },
+  "instructions": ["docs/rules.md"]
+}

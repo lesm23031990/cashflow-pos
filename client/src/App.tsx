@@ -12,13 +12,14 @@ import ProductTable from './components/ProductTable'
 import ProductModal from './components/ProductModal'
 import ProductDetailModal from './components/ProductDetailModal'
 import Toast from './components/Toast'
+import BulkPriceUpdate from './components/BulkPriceUpdate'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import Facturacion from './components/Facturacion'
 
 type AuthState = 'loading' | 'login' | 'authed'
 
-function Topbar() {
+function Topbar({ appName }: { appName: string }) {
   const location = useLocation()
   const navigate = useNavigate()
   const path = location.pathname.replace('/admin', '') || '/'
@@ -41,7 +42,7 @@ function Topbar() {
     <>
       <div className="topbar">
         <div className="topbar-left">
-          <h1 className="topbar-title">Barebare</h1>
+          <h1 className="topbar-title">{appName}</h1>
           {tasas ? (
             <span className="tasas-badge" onClick={() => setModalTasas(true)} title="Editar tasas de cambio">
               <span className="tasa-chip">USD <span>{Number(tasas.usd).toLocaleString('es-CO')}</span></span>
@@ -94,10 +95,13 @@ function AdminPage() {
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([])
   const [nuevoMetodo, setNuevoMetodo] = useState('')
+  const [toolbarCompact, setToolbarCompact] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
 
-  const lastChangeTime = useRef(0)
-  const isScanning = useRef(false)
-  const scanTimeout = useRef<ReturnType<typeof setTimeout>>()
+  const searchRef = useRef<HTMLInputElement>(null)
+  const barcodeBuffer = useRef('')
+  const barcodeTimer = useRef<ReturnType<typeof setTimeout>>()
+  const lastKeyTime = useRef(0)
 
   const showToast = useCallback((msg: string, err?: boolean) => {
     setToast({ msg, err })
@@ -109,6 +113,46 @@ function AdminPage() {
   }
 
   useEffect(() => { cargar() }, [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+
+      const now = Date.now()
+      const elapsed = now - lastKeyTime.current
+      lastKeyTime.current = now
+
+      if (e.key === 'Enter' && barcodeBuffer.current.length >= 3) {
+        const codigo = barcodeBuffer.current
+        barcodeBuffer.current = ''
+        if (searchRef.current) searchRef.current.focus()
+        setSearchInput(codigo)
+        buscarBarcode(codigo)
+        e.preventDefault()
+        return
+      }
+
+      if (e.key.length === 1 && elapsed < 50) {
+        barcodeBuffer.current += e.key
+        if (barcodeTimer.current) clearTimeout(barcodeTimer.current)
+        barcodeTimer.current = setTimeout(() => { barcodeBuffer.current = '' }, 200)
+      } else if (elapsed >= 50) {
+        barcodeBuffer.current = ''
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  useEffect(() => {
+    function onScroll() {
+      setToolbarCompact(window.scrollY > 60)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   function buscarBarcode(codigo: string) {
     if (!codigo) return
@@ -125,38 +169,14 @@ function AdminPage() {
   }
 
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const now = Date.now()
-    const elapsed = now - lastChangeTime.current
-    lastChangeTime.current = now
-
-    if (scanTimeout.current) clearTimeout(scanTimeout.current)
-
-    if (elapsed < 50) {
-      if (!isScanning.current) {
-        isScanning.current = true
-        setSearchInput(e.target.value.slice(-1))
-      } else {
-        setSearchInput(e.target.value)
-      }
-    } else {
-      isScanning.current = false
-      setSearchInput(e.target.value)
-    }
-
-    scanTimeout.current = setTimeout(() => {
-      isScanning.current = false
-    }, 200)
+    setSearchInput(e.target.value)
   }
 
   function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       const val = searchInput.trim()
       if (!val) return
-      if (isScanning.current) {
-        isScanning.current = false
-        setSearchInput('')
-        buscarBarcode(val)
-      }
+      buscarBarcode(val)
     }
   }
 
@@ -177,6 +197,12 @@ function AdminPage() {
   function handleEdit(idx: number) {
     setEditando(productos[idx])
     setModalOpen(true)
+  }
+
+  function handleUpdate(id: number, field: string, value: string | number): Promise<void> {
+    return actualizarProducto(id, { [field]: value })
+      .then(() => { showToast('Producto actualizado'); cargar() })
+      .catch((err: Error) => { showToast(err.message, true); throw err })
   }
 
   function handleDelete(idx: number) {
@@ -201,10 +227,6 @@ function AdminPage() {
       .catch((err: Error) => showToast(err.message, true))
   }
 
-  function handleTasasChange(field: 'usd' | 'ves', value: number) {
-    setTasas(prev => prev ? { ...prev, [field]: value } : null)
-  }
-
   function agregarMetodo() {
     const nombre = nuevoMetodo.trim()
     if (!nombre) return
@@ -226,14 +248,15 @@ function AdminPage() {
   return (
     <div className="wrapper">
 
-      <div className="toolbar">
-        <input type="text" className="scan-input" placeholder="Buscar producto o escanear código de barras..." value={searchInput}
+      <div className={`toolbar${toolbarCompact ? ' compact' : ''}`}>
+        <input ref={searchRef} type="text" className="scan-input" placeholder="Buscar producto o escanear código de barras..." value={searchInput}
           onChange={handleSearchChange} onKeyDown={handleSearchKeyDown} />
         <button className="btn btn-primary" onClick={() => { setEditando(null); setModalOpen(true) }}>+ Nuevo</button>
+        <button className="btn btn-outline" onClick={() => setBulkOpen(true)}>📷 Actualizar desde foto</button>
         <button className="btn btn-danger" onClick={handleExport}>Exportar</button>
       </div>
 
-      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} />
+      <ProductTable productos={productos} tasas={tasas} filtro={searchInput} onEdit={handleEdit} onDelete={handleDelete} onUpdate={handleUpdate} />
 
       {modalOpen && (
         <ProductModal producto={editando} onSave={handleSave} onClose={() => { setModalOpen(false); setEditando(null) }} />
@@ -263,6 +286,8 @@ function AdminPage() {
         </ul>
       </div>
 
+      {bulkOpen && <BulkPriceUpdate onClose={() => { setBulkOpen(false); cargar() }} onToast={showToast} />}
+
       {toast && <Toast message={toast.msg} error={toast.err} onClose={() => setToast(null)} />}
     </div>
   )
@@ -270,6 +295,14 @@ function AdminPage() {
 
 function AppContent() {
   const [auth, setAuth] = useState<AuthState>('loading')
+  const [appName, setAppName] = useState('Barebare')
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(cfg => { if (cfg.nombre_app) setAppName(cfg.nombre_app) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -292,7 +325,7 @@ function AppContent() {
 
   return (
     <TasasProvider>
-      <Topbar />
+      <Topbar appName={appName} />
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/facturacion" element={<Facturacion />} />

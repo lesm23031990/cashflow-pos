@@ -1,4 +1,4 @@
-const { app, inicializar } = require('./src/app');
+const { app, inicializar } = require('./server/app');
 
 const PORT = process.env.PORT || 3000;
 

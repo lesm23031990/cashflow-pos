@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'precios-caja-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'cashflow-pos-secret-key-2024';
 
 function generarToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
