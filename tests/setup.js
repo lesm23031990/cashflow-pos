@@ -15,11 +15,11 @@ function limpiarDbTemp(tempDir) {
 }
 
 async function iniciarApp() {
-  const { conectar } = require('../src/database/connection');
-  const { sembrar } = require('../src/database/seed');
+  const { conectar } = require('../server/database/connection');
+  const { sembrar } = require('../server/database/seed');
   await conectar();
   await sembrar();
-  const { app } = require('../src/app');
+  const { app } = require('../server/app');
   return app;
 }
 
