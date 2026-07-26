@@ -34,11 +34,28 @@ cashflow-pos/
 
 ## Workflow SDD (Spec-Driven Development)
 
-1. Escribir spec en Plane (Issue con template)
-2. Crear rama `feature/nombre-de-la-spec`
-3. Escribir tests primero (que fallan)
-4. Implementar hasta que los tests pasen
-5. Hacer PR y cerrar el Issue en Plane
+1. Escribir spec en Plane.so (Issue con template) o local en `docs/specs/`
+2. `npm run plane:pull` — Traer issues de Plane.so como specs locales
+3. Crear rama `feature/nombre-de-la-spec`
+4. `npm test` — Escribir tests primero (que fallan) y confirmar que fallan
+5. Implementar hasta que `npm test` pase
+6. `npm run plane:push` — Sincronizar cambios a Plane.so
+7. Hacer PR y cerrar el Issue en Plane
+
+## Integración con Plane.so
+
+Requiere variables de entorno (ver `.env.example`):
+
+| Variable | Descripción |
+|---|---|
+| `PLANE_API_KEY` | Token de API de Plane.so |
+| `PLANE_WORKSPACE` | Slug del workspace |
+| `PLANE_PROJECT` | ID del proyecto |
+
+Comandos:
+- `npm run plane:pull` — Descarga issues abiertos como specs en `docs/specs/`
+- `npm run plane:push` — Sube cambios locales a Plane.so
+- `npm run plane:status` — Compara estado local vs remoto
 
 ## Convenciones de Código
 

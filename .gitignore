@@ -1,6 +1,6 @@
 node_modules/
-data/precios.db
-data/precios.db-journal
+data/*.db
+data/*.db-journal
 .env
 *.traineddata
 public/admin/assets/

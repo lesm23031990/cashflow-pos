@@ -6,12 +6,22 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "plane:pull": "node scripts/sync-plane.js pull",
+    "plane:push": "node scripts/sync-plane.js push",
+    "plane:status": "node scripts/sync-plane.js status"
   },
   "dependencies": {
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.3",
     "sql.js": "^1.11.0",
     "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@vitest/ui": "^4.1.10",
+    "dotenv": "^17.4.2",
+    "vitest": "^4.1.10"
   }
 }
