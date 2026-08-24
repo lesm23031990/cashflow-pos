@@ -9,6 +9,7 @@
     "dev": "node --watch server.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "seed:demo": "node scripts/seed-demo.js",
     "plane:pull": "node scripts/sync-plane.js pull",
     "plane:push": "node scripts/sync-plane.js push",
     "plane:status": "node scripts/sync-plane.js status"
