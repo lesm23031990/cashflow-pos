@@ -51,6 +51,7 @@ export default function Facturacion() {
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
 
   const [resumenCierre, setResumenCierre] = useState<ResumenCierreResponse | null>(null)
+  const [facturas, setFacturas] = useState<Factura[]>([])
   const [cerrando, setCerrando] = useState(false)
   const [modalCierre, setModalCierre] = useState(false)
   const [cierreResultado, setCierreResultado] = useState<CierreCaja | null>(null)
@@ -72,7 +73,7 @@ export default function Facturacion() {
   function cargarDatos() {
     getProductos().then(setProductos)
     getMetodosPago().then(setMetodosPago)
-    getFacturas().then(() => {})
+    getFacturas().then(setFacturas).catch(() => {})
     getResumenCierre().then(setResumenCierre).catch(() => {})
   }
 
@@ -280,7 +281,6 @@ export default function Facturacion() {
 
   const ultimoCierre = resumenCierre?.ultimo_cierre
   const resumen = resumenCierre?.resumen
-  const facturasCierre = resumenCierre?.facturas || []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 56px)' }}>
@@ -482,7 +482,7 @@ export default function Facturacion() {
           </div>
 
           <div className="card" style={{ borderLeft: '3px solid #6366f1', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div className="card-head"><h2>Facturas ({facturasCierre.length})</h2></div>
+            <div className="card-head"><h2>Facturas ({facturas.length})</h2></div>
             <div className="card-body" style={{ flex: 1, overflow: 'auto', paddingBottom: '.5rem' }}>
               <div className="table-wrap">
                 <table>
@@ -490,9 +490,9 @@ export default function Facturacion() {
                     <tr><th>#</th><th>Nombre</th><th className="col-price">Total</th><th>Pago</th><th style={{ width: '4rem' }}></th></tr>
                   </thead>
                   <tbody>
-                    {facturasCierre.length === 0 ? (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '.75rem', fontSize: '.8125rem' }}>Sin facturas en este turno</td></tr>
-                    ) : facturasCierre.map(f => (
+                    {facturas.length === 0 ? (
+                      <tr><td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '.75rem', fontSize: '.8125rem' }}>Sin facturas — genera una nueva</td></tr>
+                    ) : facturas.map(f => (
                       <tr key={f.id} className={f.status === 'en espera' ? 'row-espera' : ''}>
                         <td style={{ fontWeight: 600 }}>{f.id}</td>
                         <td style={{ fontSize: '.8125rem' }}>{f.nombre_extra || '—'}</td>
