@@ -32,6 +32,22 @@ router.get('/turno-actual', (req, res) => {
   res.json(facturas);
 });
 
+router.get('/debug', (req, res) => {
+  const ultimoCierre = primero('SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 1');
+  const fechaInicio = ultimoCierre ? ultimoCierre.fecha_fin : new Date(new Date().setHours(8, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+  const totalFacturas = primero('SELECT COUNT(*) as total FROM facturas');
+  const facturas = consultar(
+    'SELECT id, fecha, status, cierre_id, total FROM facturas ORDER BY id DESC LIMIT 10'
+  );
+
+  res.json({
+    ultimoCierre,
+    fechaInicio,
+    totalFacturas: totalFacturas.total,
+    facturasRecientes: facturas,
+  });
+});
+
 router.get('/:id', (req, res) => {
   const f = primero(
     'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.id = ?',
