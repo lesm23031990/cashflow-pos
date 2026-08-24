@@ -39,6 +39,7 @@ export default function Facturacion() {
   const [nuevoClienteTel, setNuevoClienteTel] = useState('')
 
   const [modalFactura, setModalFactura] = useState<Factura | null>(null)
+  const [editMode, setEditMode] = useState(false)
   const [consultarOpen, setConsultarOpen] = useState(false)
   const [consSearch, setConsSearch] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
@@ -227,13 +228,17 @@ export default function Facturacion() {
   }
 
   function verFactura(id: number) {
-    getFactura(id).then(setModalFactura).catch(err => setToast({ msg: err.message, err: true }))
+    getFactura(id).then(f => { setModalFactura(f); setEditMode(false) }).catch(err => setToast({ msg: err.message, err: true }))
+  }
+
+  function activarEdicionFactura() {
+    setEditMode(true)
   }
 
   function guardarCambiosFactura() {
     if (!modalFactura) return
     actualizarFactura(modalFactura.id, { status: modalFactura.status, metodo_pago: modalFactura.metodo_pago })
-      .then(f => { setModalFactura(f); cargarDatos(); setToast({ msg: 'Factura actualizada' }) })
+      .then(f => { setModalFactura(f); setEditMode(false); cargarDatos(); setToast({ msg: 'Factura actualizada' }) })
       .catch(err => setToast({ msg: err.message, err: true }))
   }
 
@@ -522,8 +527,8 @@ export default function Facturacion() {
       </div>
 
       {modalFactura && (
-        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) setModalFactura(null) }}>
-          <div className="modal factura-modal">
+        <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) { setModalFactura(null); setEditMode(false) } }}>
+          <div className="modal factura-modal" style={{ maxWidth: '52rem' }}>
             <h2>Factura #{modalFactura.id}</h2>
             <div className="factura-meta">
               <div className="factura-meta-row">
@@ -547,9 +552,11 @@ export default function Facturacion() {
               {modalFactura.total_usd !== undefined && <p className="equiv">USD: ${fmt(modalFactura.total_usd, 2)}</p>}
               {modalFactura.total_ves !== undefined && <p className="equiv">VES: Bs {fmt(modalFactura.total_ves, 2)}</p>}
             </div>
-            {modalFactura.status === 'en espera' && (
+
+            {editMode && (
               <div className="card" style={{ marginTop: '.75rem', background: '#0b1120' }}>
                 <div className="card-body">
+                  <h3 style={{ margin: '0 0 .5rem', fontSize: '.875rem', color: '#94a3b8' }}>Editar Factura</h3>
                   <div style={{ display: 'flex', gap: '.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div className="factura-field">
                       <label>Status</label>
@@ -560,19 +567,24 @@ export default function Facturacion() {
                     </div>
                     <div className="factura-field">
                       <label>Método de Pago</label>
-                      <select className="sel" value={modalFactura.metodo_pago} onChange={e => setModalFactura({ ...modalFactura, metodo_pago: e.target.value })}>
+                      <select className="sel" value={modalFactura.metodo_pago || ''} onChange={e => setModalFactura({ ...modalFactura, metodo_pago: e.target.value })}>
                         <option value="">—</option>
                         {metodosPago.map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
                       </select>
                     </div>
-                    <button className="btn btn-primary" onClick={guardarCambiosFactura}>Guardar</button>
+                    <button className="btn btn-primary" onClick={guardarCambiosFactura}>Guardar Cambios</button>
+                    <button className="btn btn-cancel" onClick={() => setEditMode(false)}>Cancelar</button>
                   </div>
                 </div>
               </div>
             )}
+
             <div className="modal-btns">
-              <button className="btn btn-cancel" onClick={() => setModalFactura(null)}>Cerrar</button>
+              {modalFactura.status === 'en espera' && !editMode && (
+                <button className="btn btn-primary" onClick={activarEdicionFactura}>Editar Status / Pago</button>
+              )}
               <button className="btn btn-primary" onClick={() => window.print()}>Imprimir</button>
+              <button className="btn btn-cancel" onClick={() => { setModalFactura(null); setEditMode(false) }}>Cerrar</button>
             </div>
           </div>
         </div>
