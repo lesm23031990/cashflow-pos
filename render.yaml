@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: cashflow-pos
+    env: node
+    region: virginia
+    plan: free
+    buildCommand: cd client && npm install && npm run build && cd .. && npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
