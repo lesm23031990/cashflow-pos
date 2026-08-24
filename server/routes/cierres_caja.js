@@ -84,7 +84,9 @@ router.post('/', (req, res) => {
   }
 
   const creado = primero('SELECT * FROM cierres_caja WHERE id = ?', [cierre.id]);
-  res.status(201).json(creado);
+  let resumenParseado = {};
+  try { resumenParseado = JSON.parse(creado.resumen_metodos_pago || '{}') } catch (e) {}
+  res.status(201).json({ ...creado, resumen_metodos_pago: resumenParseado });
 });
 
 module.exports = router;

@@ -73,7 +73,7 @@ export interface CierreCaja {
   total_ventas: number
   total_descuentos: number
   cantidad_facturas: number
-  resumen_metodos_pago: string
+  resumen_metodos_pago: string | Record<string, ResumenMetodoPago>
   created_at: string
 }
 

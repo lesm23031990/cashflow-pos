@@ -592,7 +592,7 @@ export default function Facturacion() {
 
       {modalCierre && cierreResultado && (
         <div className="modal-overlay abierto" onClick={e => { if (e.target === e.currentTarget) { setModalCierre(false); setCierreResultado(null) } }}>
-          <div className="modal" style={{ maxWidth: '32rem' }}>
+          <div className="modal" style={{ maxWidth: '38rem' }}>
             <h2>Cierre de Caja #{cierreResultado.id}</h2>
             <div style={{ fontSize: '.8125rem', color: '#94a3b8', marginBottom: '.75rem' }}>
               <p>Desde: {cierreResultado.fecha_inicio}</p>
@@ -608,6 +608,31 @@ export default function Facturacion() {
                 <span className="cierre-kpi-label">Total</span>
               </div>
             </div>
+            {(cierreResultado.resumen_metodos_pago && typeof cierreResultado.resumen_metodos_pago === 'object' && Object.keys(cierreResultado.resumen_metodos_pago).length > 0) && (
+              <div className="card" style={{ marginBottom: '.75rem', background: '#0b1120' }}>
+                <div className="card-head"><h2 style={{ fontSize: '.875rem' }}>Desglose por Método de Pago</h2></div>
+                <div className="card-body" style={{ padding: '.5rem' }}>
+                  <table style={{ width: '100%', fontSize: '.8125rem', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '.3rem .5rem', color: '#94a3b8', borderBottom: '1px solid #1e293b' }}>Método</th>
+                        <th style={{ textAlign: 'center', padding: '.3rem .5rem', color: '#94a3b8', borderBottom: '1px solid #1e293b' }}>Cantidad</th>
+                        <th style={{ textAlign: 'right', padding: '.3rem .5rem', color: '#94a3b8', borderBottom: '1px solid #1e293b' }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(cierreResultado.resumen_metodos_pago).map(([mp, data]) => (
+                        <tr key={mp}>
+                          <td style={{ padding: '.3rem .5rem' }}>{mp}</td>
+                          <td style={{ padding: '.3rem .5rem', textAlign: 'center' }}>{data.cantidad}</td>
+                          <td style={{ padding: '.3rem .5rem', textAlign: 'right', color: '#34d399', fontWeight: 600 }}>${fmt(data.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             <div className="modal-btns">
               <button className="btn btn-primary" onClick={() => { setModalCierre(false); setCierreResultado(null) }}>Cerrar</button>
             </div>
