@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Producto, MetodoPago, Factura, FacturaDetalle, ResumenCierreResponse, CierreCaja } from '../types'
 import {
-  getProductos, getFacturas, getFactura, getMetodosPago,
+  getProductos,   getFacturasTurnoActual, getFactura, getMetodosPago,
   crearFactura, actualizarFactura, getProductoByBarcode,
   getResumenCierre, crearCierre,
 } from '../api'
@@ -73,7 +73,7 @@ export default function Facturacion() {
   function cargarDatos() {
     getProductos().then(setProductos)
     getMetodosPago().then(setMetodosPago)
-    getFacturas().then(setFacturas).catch(() => {})
+    getFacturasTurnoActual().then(setFacturas).catch(() => {})
     getResumenCierre().then(setResumenCierre).catch(() => {})
   }
 

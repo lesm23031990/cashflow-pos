@@ -130,6 +130,10 @@ export function getFacturas(): Promise<Factura[]> {
   return request('/facturas')
 }
 
+export function getFacturasTurnoActual(): Promise<Factura[]> {
+  return request('/facturas/turno-actual')
+}
+
 export function getFactura(id: number): Promise<Factura> {
   return request('/facturas/' + id)
 }
