@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { conectar } = require('./database/connection');
 const { sembrar } = require('./database/seed');
+const { sembrarDemo } = require('./database/seed-demo');
 const { verificarToken } = require('./middleware/auth');
 const productosRouter = require('./routes/productos');
 const tasasRouter = require('./routes/tasas');
@@ -49,6 +50,10 @@ app.get('/', (req, res) => {
 async function inicializar() {
   await conectar();
   sembrar();
+  // Si SEED_DEMO está activado, cargar datos demo automáticamente (solo si DB vacía)
+  if (process.env.SEED_DEMO === 'true') {
+    sembrarDemo();
+  }
 }
 
 module.exports = { app, inicializar };
