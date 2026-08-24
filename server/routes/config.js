@@ -4,7 +4,7 @@ const router = Router();
 
 router.get('/', (req, res) => {
   res.json({
-    nombre_app: process.env.APP_NAME || 'Barebare',
+    nombre_app: process.env.APP_NAME || 'CASHFLOW-POS',
   });
 });
 

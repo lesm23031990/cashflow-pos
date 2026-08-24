@@ -295,7 +295,7 @@ function AdminPage() {
 
 function AppContent() {
   const [auth, setAuth] = useState<AuthState>('loading')
-  const [appName, setAppName] = useState('Barebare')
+  const [appName, setAppName] = useState('CASHFLOW-POS')
 
   useEffect(() => {
     fetch('/api/config')
