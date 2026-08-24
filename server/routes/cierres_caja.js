@@ -18,6 +18,9 @@ router.get('/ultimo', (req, res) => {
 });
 
 router.get('/resumen', (req, res) => {
+  const ultimo = primero('SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 1');
+  const fechaInicio = ultimo ? ultimo.fecha_fin : obtenerFechaInicio();
+
   const facturas = consultar(
     'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.cierre_id IS NULL ORDER BY f.id DESC'
   );
@@ -34,8 +37,6 @@ router.get('/resumen', (req, res) => {
     resumen[mp].cantidad++;
     resumen[mp].total += f.total;
   }
-
-  const ultimo = primero('SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 1');
 
   res.json({
     facturas,
