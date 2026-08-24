@@ -39,6 +39,11 @@ app.get('/admin/*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin', 'index.html'));
 });
 
+// Ruta raíz redirige al admin
+app.get('/', (req, res) => {
+  res.redirect('/admin');
+});
+
 
 // Inicializar base de datos
 async function inicializar() {
