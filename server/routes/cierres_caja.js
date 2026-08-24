@@ -18,10 +18,8 @@ router.get('/ultimo', (req, res) => {
 });
 
 router.get('/resumen', (req, res) => {
-  const fechaInicio = obtenerFechaInicio();
   const facturas = consultar(
-    'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.fecha > ? ORDER BY f.id DESC',
-    [fechaInicio]
+    'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.cierre_id IS NULL ORDER BY f.id DESC'
   );
 
   let totalVentas = 0;
@@ -57,8 +55,7 @@ router.post('/', (req, res) => {
   const fechaFin = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   const facturas = consultar(
-    'SELECT f.* FROM facturas f WHERE f.fecha > ?',
-    [fechaInicio]
+    'SELECT f.* FROM facturas f WHERE f.cierre_id IS NULL'
   );
 
   let totalVentas = 0;
