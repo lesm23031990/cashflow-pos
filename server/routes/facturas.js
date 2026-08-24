@@ -20,6 +20,18 @@ router.get('/', (req, res) => {
   res.json(rows);
 });
 
+router.get('/turno-actual', (req, res) => {
+  const ultimo = primero('SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 1');
+  const fechaInicio = ultimo ? ultimo.fecha_fin : new Date(new Date().setHours(8, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
+
+  const facturas = consultar(
+    'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.fecha > ? ORDER BY f.id DESC',
+    [fechaInicio]
+  );
+
+  res.json(facturas);
+});
+
 router.get('/:id', (req, res) => {
   const f = primero(
     'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.id = ?',
@@ -148,18 +160,6 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   ejecutar('DELETE FROM facturas WHERE id = ?', [req.params.id]);
   res.json({ ok: true });
-});
-
-router.get('/turno-actual', (req, res) => {
-  const ultimo = primero('SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 1');
-  const fechaInicio = ultimo ? ultimo.fecha_fin : new Date(new Date().setHours(8, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
-
-  const facturas = consultar(
-    'SELECT f.*, c.nombre AS cliente_nombre FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.fecha > ? ORDER BY f.id DESC',
-    [fechaInicio]
-  );
-
-  res.json(facturas);
 });
 
 module.exports = router;
