@@ -10,6 +10,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: SEED_DEMO
-        value: "true"
+        value: "false"
       - key: JWT_SECRET
         generateValue: true

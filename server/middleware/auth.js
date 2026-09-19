@@ -1,6 +1,14 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cashflow-pos-secret-key-2024';
+function loadJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required. Refusing to start with an insecure default.');
+  }
+  return secret;
+}
+
+const JWT_SECRET = loadJwtSecret();
 
 function generarToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });

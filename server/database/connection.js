@@ -2,8 +2,11 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 
-const DB_PATH = path.join(__dirname, '..', '..', 'data', 'precios.db');
+const DB_PATH = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(__dirname, '..', '..', 'data', 'precios.db');
 
 let SQL = null;
 let db = null;
@@ -167,8 +170,36 @@ function primero(sql, params) {
   return rows.length > 0 ? rows[0] : null;
 }
 
+const BCRYPT_SALT_ROUNDS = 10;
+
+/**
+ * Hashes a plaintext password using bcrypt (salted + adaptive cost).
+ * @param {string} password
+ * @returns {string} bcrypt hash (prefixed with $2b$)
+ */
 function hashPassword(password) {
+  return bcrypt.hashSync(password, BCRYPT_SALT_ROUNDS);
+}
+
+/** Legacy unsalted SHA-256, kept ONLY for verifying pre-migration rows. */
+function legacySha256(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-module.exports = { conectar, guardar, ejecutar, consultar, primero, hashPassword };
+/**
+ * Verifies a password against a stored hash, transparently supporting the
+ * legacy SHA-256 format so existing users can migrate on first successful login.
+ * @param {string} password plaintext attempt
+ * @param {string} storedHash hash persisted in the DB
+ * @returns {{ ok: boolean, needsRehash: boolean }} needsRehash=true when the
+ *   password matched a legacy hash and should be re-stored as bcrypt.
+ */
+function verifyPassword(password, storedHash) {
+  if (typeof storedHash === 'string' && /^\$2[aby]\$/.test(storedHash)) {
+    return { ok: bcrypt.compareSync(password, storedHash), needsRehash: false };
+  }
+  const ok = legacySha256(password) === storedHash;
+  return { ok, needsRehash: ok };
+}
+
+module.exports = { conectar, guardar, ejecutar, consultar, primero, hashPassword, verifyPassword, DB_PATH };

@@ -1,5 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
+const cors = require('cors');
 const { conectar } = require('./database/connection');
 const { sembrar } = require('./database/seed');
 const { sembrarDemo } = require('./database/seed-demo');
@@ -18,8 +21,16 @@ const app = express();
 
 app.use(express.json({ limit: '10mb' }));
 
-// Archivos estáticos públicos (busqueda.html, etc.)
-app.use(express.static(path.join(__dirname, '..')));
+// Headers de seguridad (X-Frame-Options, HSTS, etc.) y CORS con lista blanca
+app.use(helmet());
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true }));
+
+// Archivos estáticos públicos (SOLO la carpeta public/, nunca la raíz del repo)
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Rutas públicas (sin token)
 app.use('/api/auth', authRouter);
@@ -51,7 +62,8 @@ async function inicializar() {
   await conectar();
   sembrar();
   // Si SEED_DEMO está activado, cargar datos demo automáticamente (solo si DB vacía)
-  if (process.env.SEED_DEMO === 'true') {
+  // Demo seed only outside production to avoid polluting real business data
+  if (process.env.SEED_DEMO === 'true' && process.env.NODE_ENV !== 'production') {
     sembrarDemo();
   }
 }

@@ -29,6 +29,9 @@ router.get('/turno-actual', (req, res) => {
 });
 
 router.get('/debug', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
   const ultimoCierre = primero('SELECT * FROM cierres_caja ORDER BY id DESC LIMIT 1');
   const fechaInicio = ultimoCierre ? ultimoCierre.fecha_fin : new Date(new Date().setHours(8, 0, 0, 0)).toISOString().slice(0, 19).replace('T', ' ');
   const totalFacturas = primero('SELECT COUNT(*) as total FROM facturas');
