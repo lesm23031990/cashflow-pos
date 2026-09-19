@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import type { Producto, Tasas, MetodoPago } from './types'
 import {
   getProductos, getProductoByBarcode, crearProducto,
@@ -21,7 +21,6 @@ type AuthState = 'loading' | 'login' | 'authed'
 
 function Topbar({ appName }: { appName: string }) {
   const location = useLocation()
-  const navigate = useNavigate()
   const path = location.pathname.replace('/admin', '') || '/'
   const { tasas, guardarTasas: contextGuardarTasas } = useTasas()
   const [editTasas, setEditTasas] = useState<Tasas>({ usd: 0, ves: 0 })
@@ -100,7 +99,7 @@ function AdminPage() {
 
   const searchRef = useRef<HTMLInputElement>(null)
   const barcodeBuffer = useRef('')
-  const barcodeTimer = useRef<ReturnType<typeof setTimeout>>()
+  const barcodeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const lastKeyTime = useRef(0)
 
   const showToast = useCallback((msg: string, err?: boolean) => {

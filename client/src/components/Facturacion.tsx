@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Producto, MetodoPago, Factura, FacturaDetalle, ResumenCierreResponse, CierreCaja } from '../types'
 import {
   getProductos,   getFacturasTurnoActual, getFactura, getMetodosPago,
@@ -43,10 +43,6 @@ export default function Facturacion() {
   const [consultarOpen, setConsultarOpen] = useState(false)
   const [consSearch, setConsSearch] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
-  const [calcOpen, setCalcOpen] = useState(false)
-  const [calcCOP, setCalcCOP] = useState('')
-  const [calcUSD, setCalcUSD] = useState('')
-  const [calcVES, setCalcVES] = useState('')
   const [generando, setGenerando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null)
 
@@ -57,7 +53,6 @@ export default function Facturacion() {
   const [cierreResultado, setCierreResultado] = useState<CierreCaja | null>(null)
 
   const searchRef = useRef<HTMLInputElement>(null)
-  const recibidoRef = useRef<HTMLInputElement>(null)
 
   const lastScan = useRef(0)
   const scanBuf = useRef('')
@@ -67,8 +62,8 @@ export default function Facturacion() {
   const totalVES = tasas && tasas.ves > 0 ? totalCOP / tasas.ves : 0
   const totalRecibidoCOP = recibidoCOP + (recibidoUSD * (tasas?.usd || 0)) + (recibidoVES * (tasas?.ves || 0))
   const cambioCOP = totalRecibidoCOP > totalCOP ? totalRecibidoCOP - totalCOP : 0
-  const cambioUSD = cambioCOP > 0 && tasas?.usd > 0 ? cambioCOP / tasas.usd : 0
-  const cambioVES = cambioCOP > 0 && tasas?.ves > 0 ? cambioCOP / tasas.ves : 0
+  const cambioUSD = cambioCOP > 0 && tasas && tasas.usd > 0 ? cambioCOP / tasas.usd : 0
+  const cambioVES = cambioCOP > 0 && tasas && tasas.ves > 0 ? cambioCOP / tasas.ves : 0
 
   function cargarDatos() {
     getProductos().then(setProductos)
@@ -105,11 +100,9 @@ export default function Facturacion() {
       setDetalles([...detalles, nd])
     }
     setSearch('')
-    setCantidad(1)
     setSearchResults([])
     searchRef.current?.focus()
   }
-  const [cantidad, setCantidad] = useState(1)
 
   function actualizarCantidad(tempId: number, nuevaCant: number) {
     const c = Math.max(1, nuevaCant)
@@ -262,7 +255,6 @@ export default function Facturacion() {
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName
       if (consultarOpen) return
 
       switch (e.key) {
@@ -270,7 +262,6 @@ export default function Facturacion() {
         case 'F3': e.preventDefault(); searchRef.current?.focus(); searchRef.current?.select(); break
         case 'F6': e.preventDefault(); nuevaFactura(); break
         case 'F7': e.preventDefault(); handleCerrarCaja(); break
-        case 'F8': e.preventDefault(); setCalcOpen(o => !o); break
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generarFactura() }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); nuevaFactura() }

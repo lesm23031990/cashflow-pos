@@ -58,14 +58,14 @@ export default function BulkPriceUpdate({ onClose, onToast }: Props) {
 
       const nombreLower = nombre.toLowerCase()
       const sugerido = productos.find(p =>
-        p.nombre.toLowerCase().includes(nombreLower) || nombreLower.includes(p.nombre.toLowerCase())
+        p.p.toLowerCase().includes(nombreLower) || nombreLower.includes(p.p.toLowerCase())
       ) || productos.find(p =>
-        nombreLower.split(/\s+/).some((pal: string) => pal.length > 2 && p.nombre.toLowerCase().includes(pal))
+        nombreLower.split(/\s+/).some((pal: string) => pal.length > 2 && p.p.toLowerCase().includes(pal))
       )
 
       items.push({
         id: nextFilaId++, nombre, marca: sugerido?.m || '', precio: String(precio),
-        sugerido, verificado: false,
+        sugerido: sugerido ?? null, verificado: false,
       })
     }
 
