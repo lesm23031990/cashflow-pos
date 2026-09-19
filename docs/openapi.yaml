@@ -1,0 +1,802 @@
+openapi: 3.0.3
+info:
+  title: CashFlow POS API
+  version: 1.0.0
+  description: |
+    Contrato HTTP de CashFlow POS (Node.js + Express + sql.js), **documentado tal como está hoy**
+    (verdad fotográfica del código en `server/routes/*`).
+
+    ## Convenciones de autenticación
+    - Rutas **públicas**: `/api/config`, `POST /api/auth/login`.
+    - Rutas **protegidas** con `Authorization: Bearer <JWT>`: todo `/api/*` salvo las anteriores
+      (`GET /api/auth/verificar` también exige token).
+
+    ## ⚠️ Deuda de contrato conocida (documentada a propósito, no corregida)
+    - **`/api/productos` usa claves crípticas**: `p` (nombre), `b` (código de barras),
+      `v` (precio COP), `m` (marca), `c` (categoría). Esto acopla front y back y rompe el
+      estándar `{ ok, data, error }` definido en `docs/rules.md`.
+    - **Formato de respuesta inconsistente**: algunos endpoints devuelven el recurso desnudo,
+      otros `{ ok: true }`. No hay un envoltorio único.
+    - **`POST /api/productos/importar` es destructivo**: hace `DELETE FROM productos` antes de
+      insertar. Úsalo solo para importar un set completo.
+
+servers:
+  - url: http://localhost:3000
+    description: Desarrollo local
+  - url: https://cashflow-pos.onrender.com
+    description: Render (reemplaza por tu dominio real)
+
+tags:
+  - { name: Auth }
+  - { name: Config }
+  - { name: Productos }
+  - { name: Tasas }
+  - { name: Clientes }
+  - { name: Facturas }
+  - { name: "Métodos de Pago" }
+  - { name: "Cierres de Caja" }
+  - { name: OCR }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/config:
+    get:
+      tags: [Config]
+      summary: Configuración pública de la app
+      security: []
+      responses:
+        "200":
+          description: Nombre de la aplicación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nombre_app: { type: string, example: CASHFLOW-POS }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: "Inicio de sesión (rate-limited: 10 intentos / 15 min / IP)"
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: admin }
+                password: { type: string, example: admin123 }
+      responses:
+        "200":
+          description: Login correcto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string, description: JWT firmado }
+                  usuario:
+                    type: object
+                    properties:
+                      username: { type: string }
+                      rol: { type: string, example: admin }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401":
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429":
+          description: Demasiados intentos (rate limit)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/auth/verificar:
+    get:
+      tags: [Auth]
+      summary: Verifica la validez del token actual
+      responses:
+        "200":
+          description: Token válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valido: { type: boolean, example: true }
+                  usuario:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      username: { type: string }
+                      rol: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/productos:
+    get:
+      tags: [Productos]
+      summary: Lista de productos
+      description: "⚠️ Devuelve claves crípticas (p/b/v/m/c). Ver `Producto`."
+      responses:
+        "200":
+          description: Arreglo de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Producto" }
+    post:
+      tags: [Productos]
+      summary: Crear producto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, precio_cop]
+              properties:
+                nombre: { type: string }
+                codigo_barras: { type: string }
+                precio_cop: { type: number }
+                marca: { type: string }
+                categoria: { type: string }
+      responses:
+        "201":
+          description: Producto creado (shape criptico)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Producto" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/productos/codigo/{codigo}:
+    get:
+      tags: [Productos]
+      summary: Buscar producto por código de barras
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Producto encontrado, o `null` si no existe
+          content:
+            application/json:
+              schema:
+                nullable: true
+                allOf:
+                  - $ref: "#/components/schemas/Producto"
+
+  /api/productos/{id}:
+    put:
+      tags: [Productos]
+      summary: Actualizar producto (parcial)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                codigo_barras: { type: string }
+                precio_cop: { type: number }
+                marca: { type: string }
+                categoria: { type: string }
+      responses:
+        "200":
+          description: Producto actualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Producto" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Productos]
+      summary: Eliminar producto
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+
+  /api/productos/exportar:
+    get:
+      tags: [Productos]
+      summary: Exportar todos los productos (mismo shape que GET)
+      responses:
+        "200":
+          description: Arreglo de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Producto" }
+
+  /api/productos/actualizar-masivo:
+    post:
+      tags: [Productos]
+      summary: Alta/actualización masiva (upsert)
+      description: "Cada item acepta claves cripticas (p,b,v,m,c) o semánticas. Con `id` actualiza; sin él hace upsert por (nombre, marca)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer, nullable: true }
+                  nombre: { type: string }
+                  precio_cop: { type: number }
+                  marca: { type: string }
+                  categoria: { type: string }
+                  codigo_barras: { type: string }
+      responses:
+        "200":
+          description: Resultados por item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+
+  /api/productos/importar:
+    post:
+      tags: [Productos]
+      summary: "⚠️ Importar set completo (DESTRUCTIVO: borra todos los productos antes)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: "#/components/schemas/Producto" }
+      responses:
+        "200":
+          description: Cantidad importada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  cantidad: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/tasas:
+    get:
+      tags: [Tasas]
+      summary: Tasas de cambio vigentes
+      responses:
+        "200":
+          description: Tasas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tasas" }
+    put:
+      tags: [Tasas]
+      summary: Actualizar tasas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Tasas" }
+      responses:
+        "200":
+          description: Tasas guardadas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tasas" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar clientes
+      responses:
+        "200":
+          description: Arreglo de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Cliente" }
+    post:
+      tags: [Clientes]
+      summary: Crear cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre: { type: string }
+                documento: { type: string }
+                telefono: { type: string }
+                direccion: { type: string }
+      responses:
+        "201":
+          description: Cliente creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cliente" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Obtener cliente
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      responses:
+        "200":
+          description: Cliente
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cliente" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Clientes]
+      summary: Actualizar cliente (parcial)
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                documento: { type: string }
+                telefono: { type: string }
+                direccion: { type: string }
+      responses:
+        "200":
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cliente" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Clientes]
+      summary: Eliminar cliente
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+
+  /api/facturas:
+    get:
+      tags: [Facturas]
+      summary: Listar facturas (sin detalles)
+      description: "El listado NO incluye `detalles` ni `total_usd/ves` (eso solo aparece en GET /{id})."
+      responses:
+        "200":
+          description: Arreglo de facturas (row crudo + cliente_nombre)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Factura" }
+    post:
+      tags: [Facturas]
+      summary: Crear factura con sus detalles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [detalles]
+              properties:
+                cliente_id: { type: integer, nullable: true }
+                cliente_nombre: { type: string, description: "Si viene, crea un cliente nuevo" }
+                cliente_telefono: { type: string }
+                nombre_extra: { type: string }
+                moneda: { type: string, example: COP }
+                descuento: { type: number }
+                metodo_pago: { type: string }
+                detalles:
+                  type: array
+                  items:
+                    type: object
+                    required: [producto_id, cantidad]
+                    properties:
+                      producto_id: { type: integer }
+                      cantidad: { type: number }
+                      precio_unitario: { type: number, description: "Si se omite, usa el precio_cop del producto" }
+      responses:
+        "201":
+          description: Factura creada (con detalles y totales)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacturaDetalle" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/facturas/turno-actual:
+    get:
+      tags: [Facturas]
+      summary: Facturas del turno actual (cierre_id IS NULL)
+      responses:
+        "200":
+          description: Arreglo de facturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Factura" }
+
+  /api/facturas/{id}:
+    get:
+      tags: [Facturas]
+      summary: Detalle de factura (incluye detalles + total_usd + total_ves)
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      responses:
+        "200":
+          description: Factura con detalles
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacturaDetalle" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Facturas]
+      summary: Actualizar factura (status / metodo_pago / nombre_extra / reemplazo de detalles)
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [en espera, pagada] }
+                metodo_pago: { type: string }
+                nombre_extra: { type: string }
+                detalles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      producto_id: { type: integer }
+                      cantidad: { type: number }
+                      precio_unitario: { type: number }
+      responses:
+        "200":
+          description: Factura actualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacturaDetalle" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Facturas]
+      summary: Eliminar factura
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+
+  /api/metodos-pago:
+    get:
+      tags: ["Métodos de Pago"]
+      summary: Listar métodos de pago
+      responses:
+        "200":
+          description: Arreglo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MetodoPago" }
+    post:
+      tags: ["Métodos de Pago"]
+      summary: Crear método de pago
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre: { type: string }
+      responses:
+        "201":
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MetodoPago" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /api/metodos-pago/{id}:
+    put:
+      tags: ["Métodos de Pago"]
+      summary: Renombrar método de pago
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre: { type: string }
+      responses:
+        "200":
+          description: Actualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MetodoPago" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Métodos de Pago"]
+      summary: Eliminar método de pago
+      parameters: [ { $ref: "#/components/parameters/IdPath" } ]
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+
+  /api/cierres-caja/ultimo:
+    get:
+      tags: ["Cierres de Caja"]
+      summary: Último cierre registrado (o null)
+      responses:
+        "200":
+          description: Cierre o null
+          content:
+            application/json:
+              schema:
+                nullable: true
+                allOf:
+                  - $ref: "#/components/schemas/Cierre"
+
+  /api/cierres-caja/resumen:
+    get:
+      tags: ["Cierres de Caja"]
+      summary: Resumen del turno actual (facturas sin cerrar + KPIs)
+      responses:
+        "200":
+          description: Resumen
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResumenCierre" }
+
+  /api/cierres-caja:
+    post:
+      tags: ["Cierres de Caja"]
+      summary: Ejecutar cierre de caja (asigna cierre_id a las facturas del turno)
+      responses:
+        "201":
+          description: Cierre creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cierre" }
+
+  /api/ocr:
+    post:
+      tags: [OCR]
+      summary: Analizar una imagen (base64) y sugerir productos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imagen]
+              properties:
+                imagen: { type: string, description: "Imagen en base64" }
+      responses:
+        "200":
+          description: Items detectados + texto extraído
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  texto_extraido: { type: string }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        nombre: { type: string }
+                        precio_cop: { type: integer }
+                        texto_original: { type: string }
+                        sugerido:
+                          nullable: true
+                          allOf:
+                            - $ref: "#/components/schemas/Producto"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500":
+          description: Error al procesar la imagen
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer }
+
+  responses:
+    BadRequest:
+      description: Validación fallida
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Token requerido, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: "Mensaje de error" }
+
+    Ok:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+
+    Producto:
+      type: object
+      description: "⚠️ Contrato actual: claves abreviadas. Ver mapping abajo."
+      properties:
+        id: { type: integer }
+        p: { type: string, description: "nombre" }
+        b: { type: string, description: "codigo_barras" }
+        v: { type: number, description: "precio_cop" }
+        m: { type: string, description: "marca" }
+        c: { type: string, description: "categoria" }
+      example: { id: 1, p: "Coca Cola 2L", b: "7501055300378", v: 6500, m: "Coca Cola", c: "Bebidas" }
+
+    Tasas:
+      type: object
+      properties:
+        usd: { type: number, example: 3500 }
+        ves: { type: number, example: 4.7 }
+
+    Cliente:
+      type: object
+      properties:
+        id: { type: integer }
+        nombre: { type: string }
+        documento: { type: string }
+        telefono: { type: string }
+        direccion: { type: string }
+
+    Factura:
+      type: object
+      description: "Row de la tabla facturas + cliente_nombre (en el listado no vienen detalles)."
+      properties:
+        id: { type: integer }
+        cliente_id: { type: integer }
+        cliente_nombre: { type: string }
+        fecha: { type: string, example: "2026-09-18 14:30:00" }
+        moneda: { type: string, example: COP }
+        tasa_usd: { type: number }
+        tasa_ves: { type: number }
+        subtotal: { type: number }
+        descuento: { type: number }
+        total: { type: number }
+        status: { type: string, enum: [en espera, pagada] }
+        metodo_pago: { type: string }
+        nombre_extra: { type: string }
+        cierre_id: { type: integer, nullable: true }
+
+    FacturaDetalle:
+      allOf:
+        - $ref: "#/components/schemas/Factura"
+        - type: object
+          properties:
+            detalles:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  factura_id: { type: integer }
+                  producto_id: { type: integer }
+                  producto_nombre: { type: string }
+                  cantidad: { type: number }
+                  precio_unitario: { type: number }
+                  subtotal: { type: number }
+            total_usd: { type: number }
+            total_ves: { type: number }
+
+    MetodoPago:
+      type: object
+      properties:
+        id: { type: integer }
+        nombre: { type: string }
+
+    ResumenMetodoPago:
+      type: object
+      properties:
+        cantidad: { type: integer }
+        total: { type: number }
+
+    Cierre:
+      type: object
+      description: "En GET /ultimo, resumen_metodos_pago viene como STRING JSON. En POST / viene parseado como objeto."
+      properties:
+        id: { type: integer }
+        fecha_inicio: { type: string }
+        fecha_fin: { type: string }
+        total_ventas: { type: number }
+        total_descuentos: { type: number }
+        cantidad_facturas: { type: integer }
+        resumen_metodos_pago:
+          description: "string (JSON) o objeto segun el endpoint"
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: { $ref: "#/components/schemas/ResumenMetodoPago" }
+        created_at: { type: string }
+
+    ResumenCierre:
+      type: object
+      properties:
+        facturas:
+          type: array
+          items: { $ref: "#/components/schemas/Factura" }
+        resumen:
+          type: object
+          properties:
+            total_ventas: { type: number }
+            total_descuentos: { type: number }
+            cantidad_facturas: { type: integer }
+            resumen_metodos_pago:
+              type: object
+              additionalProperties: { $ref: "#/components/schemas/ResumenMetodoPago" }
+        fecha_inicio: { type: string }
+        ultimo_cierre:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Cierre"

@@ -74,6 +74,20 @@ npm start
 
 ---
 
+## 📚 Documentación de la API
+
+El contrato HTTP completo (32 endpoints) está definido en **[`docs/openapi.yaml`](docs/openapi.yaml)**
+(estándar OpenAPI 3.0). Para verla interactiva:
+
+- Abrir en [https://editor.swagger.io](https://editor.swagger.io) → *File > Open* → `docs/openapi.yaml`
+- Importar en **Postman/Insomnia** → *Import* → el mismo archivo (genera una colección)
+
+> ⚠️ La API se documenta **tal como está hoy**: `/api/productos` devuelve claves abreviadas
+> (`p/b/v/m/c`) y no todas las respuestas usan el envoltorio `{ ok, data, error }` de `docs/rules.md`.
+> Ver la sección "Deuda de contrato" dentro del propio `openapi.yaml`.
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Consulta el archivo para más detalles.
