@@ -44,19 +44,20 @@ cd cashflow-pos
 ```
 
 ### 2. Configurar el Backend (Servidor)
-Instala las dependencias principales en la raíz del proyecto y arranca el servidor:
+Crea un archivo `.env` con al menos `JWT_SECRET` (genéralo con `openssl rand -hex 32`).
+El servidor **no arranca** sin él (fail-fast por seguridad). Luego:
 ```bash
 npm install
-npm start
+npm start        # producción   |   npm run dev  (con --watch)
 ```
-*Nota: Esto iniciará el script del archivo central `server.js`.*
+*Nota: esto inicia el script central `server.js`. La API queda en `http://localhost:3000`.*
 
 ### 3. Configurar el Frontend (Cliente)
-En una nueva terminal, dirígete al directorio del cliente para inicializar la interfaz de usuario:
+En una nueva terminal, dirígete al directorio del cliente:
 ```bash
 cd client
 npm install
-npm start
+npm run dev      # Vite en modo desarrollo (proxy a /api)
 ```
 
 ---
@@ -64,12 +65,14 @@ npm start
 ## 📁 Estructura del Proyecto
 
 ```text
-├── client/          # Frontend de la aplicación en React/TypeScript
-├── data/            # Almacenamiento local o scripts de bases de datos
-├── public/admin/    # Recursos públicos y paneles administrativos estáticos
-├── src/             # Lógica del servidor y controladores API
-├── server.js        # Punto de entrada principal de la aplicación Node.js
-└── package.json     # Configuración de dependencias generales
+├── server/          # Backend Node.js/Express (routes, database, middleware)
+├── server.js        # Punto de entrada del servidor
+├── client/          # Frontend React + TypeScript (Vite)
+├── public/admin/    # Build del SPA (lo que sirve el backend en /admin)
+├── docs/            # Documentación (openapi.yaml, specs/, rules.md)
+├── scripts/         # Utilidades (seed-demo, sync-plane)
+├── data/            # Base de datos SQLite (gitignoreada)
+└── package.json     # Scripts y dependencias del backend
 ```
 
 ---
